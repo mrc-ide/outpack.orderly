@@ -17,8 +17,10 @@ orderly_to_outpack <- function(path) {
             length(files) > 0)
 
   hash_found <- withr::with_dir(path, outpack:::hash_files(files, "md5"))
-  if (any(hash_expected != hash_found)) {
-    stop("Some hashes do not agree")
+  hash_err <- hash_expected != hash_found
+  if (any(hash_err)) {
+    message(sprintf("*** Some hashes do not agree for %s/%s:", name, id))
+    message(paste(sprintf("  - %s", files[hash_err]), collapse = "\n"))
   }
 
   ignore <- c("orderly_run.rds", "orderly.log")
