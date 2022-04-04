@@ -69,7 +69,7 @@ orderly_to_outpack <- function(path) {
 
   orderly <- list(
     "artefacts" = artefacts,
-    "packages" = data$meta$packages,
+    "packages" = data$meta$packages %||% character(0),
     "global" = global,
     "role" = role,
     "displayname" = scalar(data$meta$displayname),
