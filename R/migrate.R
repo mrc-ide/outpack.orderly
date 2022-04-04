@@ -39,6 +39,11 @@ orderly_to_outpack <- function(path) {
   }
 
   parameters <- data$meta$parameters
+  if (class(parameters) == "data.frame") {
+    ## Seen in native-201910-201710-compare-impact/20200603-103158-9a8cb992
+    parameters <- as.list(parameters)
+  }
+
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
   session <- outpack:::outpack_session_info(data$session_info)
