@@ -13,6 +13,8 @@ RoxygenNote: 7.1.1
 URL: https://github.com/mrc-ide/outpack.orderly
 BugReports: https://github.com/mrc-ide/outpack.orderly/issues
 Imports:
+    orderly,
+    orderly2 (>= 0.1.1),
     outpack
 Suggests:
     testthat (>= 3.0.0)

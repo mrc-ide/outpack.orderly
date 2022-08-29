@@ -1,4 +1,38 @@
-orderly_to_outpack <- function(path) {
+migrate_metadata <- function(root, verbose = TRUE) {
+  cfg_orderly <- orderly::orderly_config(root)
+  root <- cfg_orderly$root
+
+  if (file.exists(file.path(root, ".outpack"))) {
+    root_outpack <- outpack::outpack_root_open(root)
+  } else {
+    root_outpack <- outpack::outpack_init(root)
+  }
+
+  contents <- orderly::orderly_list_archive(root)
+  contents <- file.path(path, "archive", contents$name, contents$id)
+  res <- lapply(contents, function(p) {
+    if (verbose) {
+      message(paste0(p, "..."), appendLF = FALSE)
+    }
+    ret <- tryCatch(
+      orderly_metadata_to_outpack(p, root_outpack$config),
+      error = identity)
+    fail <- inherits(ret, "error")
+    if (verbose) {
+      message(if (fail) "FAIL" else "ok")
+    }
+    ret
+  })
+
+  browser()
+
+  res <- res[order(vapply(res, "[[", "", "id"))]
+  saveRDS(res, "res.rds")
+
+
+}
+
+orderly_metadata_to_outpack <- function(path, cfg_outpack) {
   data <- readRDS(file.path(path, "orderly_run.rds"))
 
   time <- list(start = data$time - data$meta$elapsed,
@@ -27,6 +61,10 @@ orderly_to_outpack <- function(path) {
   found <- dir(path, recursive = TRUE, all.files = TRUE, no.. = TRUE)
   extra <- setdiff(found, c(files, ignore))
 
+  if (length(extra) > 0) {
+    browser()
+  }
+
   if (is.null(data$meta$depends)) {
     depends <- NULL
   } else {
@@ -35,9 +73,11 @@ orderly_to_outpack <- function(path) {
       data$meta$depends$index <- as.integer(factor(data$meta$depends$id))
     }
     depends <- unname(lapply(
-      split(data$meta$depends, data$meta$depends$index), function(x)
-        list(id = x$id[[1]],
-             files = data_frame(here = x$as, there = x$filename))))
+      split(data$meta$depends, data$meta$depends$index), function(x) {
+        list(packet = x$id[[1]],
+             files = data_frame(here = x$as,
+                                there = x$filename))
+      }))
   }
 
   parameters <- data$meta$parameters
@@ -49,30 +89,36 @@ orderly_to_outpack <- function(path) {
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
   session <- outpack:::outpack_session_info(data$session_info)
-  hash_algorithm <- "sha256"
+
+  ## TODO: this is the root, not a config, or we pass just the config
+  ## in which is fine
+  hash_algorithm <- cfg_outpack$core$hash_algorithm
 
   f_artefacts <- function(x, outputs) {
     list(description = jsonlite::unbox(x$description),
-         format = jsonlite::unbox(x$format),
-         contents = outputs$filename[outputs$order == x$order])
+         paths = outputs$filename[outputs$order == x$order])
   }
-  artefacts <- lapply(seq_len(nrow(data$meta$artefacts)), function(i)
-    f_artefacts(data$meta$artefacts[i, ], data$meta$file_info_artefacts))
+  artefacts <- lapply(seq_len(nrow(data$meta$artefacts)), function(i) {
+    f_artefacts(data$meta$artefacts[i, ], data$meta$file_info_artefacts)
+  })
 
-  global <- lapply(data$meta$global_resources, jsonlite::unbox)
-  if (length(global) == 0) { # ensure serialiation consistent
-    global <- setNames(list(), character())
+  if (length(data$meta$global_resources) == 0) {
+    global <- list()
+  } else {
+    global <- Map(function(here, there) {
+      list(here = jsonlite::unbox(here),
+           there = jsonlite::unbox(there))
+    }, names(data$meta$global_resources), unname(data$meta$global_resources),
+    USE.NAMES = FALSE)
   }
 
-  role <- c(
-    setNames(lapply(data$meta$file_info_inputs$file_purpose, jsonlite::unbox),
-             data$meta$file_info_inputs$filename),
-    setNames(rep(list(scalar("dependency")), NROW(data$meta$depends)),
-             data$meta$depends$as))
+  role <- data_frame(
+    path = c(data$meta$file_info_inputs$filename,
+             data$meta$depends$as),
+    role = c(data$meta$file_info_inputs$file_purpose,
+             rep("dependency", NROW(data$meta$depends))))
 
-  jsonlite::toJSON(
-    setNames(list(), character()), pretty = FALSE, auto_unbox = FALSE,
-    json_verbatim = TRUE, na = "null", null = "null")
+  schema <- orderly2:::custom_metadata_schema()
 
   orderly <- list(
     "artefacts" = artefacts,
@@ -80,13 +126,13 @@ orderly_to_outpack <- function(path) {
     "global" = global,
     "role" = role,
     "displayname" = scalar(data$meta$displayname),
-    "description" = scalar(data$meta$description))
+    "description" = scalar(data$meta$description),
+    "custom" = NULL)
   orderly_json <- jsonlite::toJSON(
     orderly, pretty = FALSE, auto_unbox = FALSE,
     json_verbatim = TRUE, na = "null", null = "null")
-  path_schema <- system.file("schema/orderly.json", package = "outpack.orderly",
-                             mustWork = TRUE)
-  outpack:::custom_schema(path_schema)$validate(orderly_json, error = TRUE)
+
+  outpack:::custom_schema(schema)$validate(orderly_json, error = TRUE)
   custom <- list(list(application = "orderly",
                       data = orderly_json))
 
@@ -96,7 +142,9 @@ orderly_to_outpack <- function(path) {
   json <- outpack:::outpack_metadata_create(
     path = path, name = name, id = id, time = time, files = files,
     depends = depends, parameters = parameters, script = script,
-    custom = custom, session = session, hash_algorithm = hash_algorithm)
+    custom = custom, session = session,
+    file_ignore = NULL, file_hash = NULL,
+    hash_algorithm = hash_algorithm)
 
   list(id = id,
        name = name,
