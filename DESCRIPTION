@@ -19,3 +19,7 @@ Imports:
 Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Remotes:
+    vimc/orderly,
+    vimc/orderly2@vimc-6667,
+    mrc-ide/outpack
