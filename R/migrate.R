@@ -1,38 +1,69 @@
-migrate_metadata <- function(root, verbose = TRUE) {
-  cfg_orderly <- orderly::orderly_config(root)
-  root <- cfg_orderly$root
-
-  if (file.exists(file.path(root, ".outpack"))) {
-    root_outpack <- outpack::outpack_root_open(root)
-  } else {
-    root_outpack <- outpack::outpack_init(root)
+##' Migrate an orderly archive to outpack. This function is subject to
+##' change, and does not handle all failure modes. It is quite slow
+##' because it involves hashing the contents of your archive several
+##' times - if you have GBs of files expect this to take minutes or
+##' hours.
+##'
+##' @title Migrate orderly to outpack
+##'
+##' @param src Path to the orderly archive to migrate. This must be
+##'   "complete" (i.e., containing a full graph and no metadata only
+##'   pulls)
+##'
+##' @param dest The destination to create a new outpack archive. This
+##'   will be created with no user-visible archive directory, with a
+##'   file store, and requiring a full tree (i.e., in a suitable
+##'   configuration to use as an upstream source).
+##'
+##' @return The path to the newly created archive
+##' @export
+orderly2outpack <- function(src, dest) {
+  if (file.exists(dest)) {
+    stop("Destination already exists")
   }
+  root_outpack <- outpack::outpack_init(dest,
+                                        path_archive = NULL,
+                                        use_file_store = TRUE,
+                                        require_complete_tree = TRUE)
+  hash_algorithm <- root_outpack$config$core$hash_algorithm
 
-  contents <- orderly::orderly_list_archive(root)
-  contents <- file.path(path, "archive", contents$name, contents$id)
+  cfg_orderly <- orderly::orderly_config(src)
+  src <- cfg_orderly$root
+  message("Checking we can migrate this orderly archive")
+  check_complete_tree(src)
+  contents <- orderly::orderly_list_archive(src)
+  contents <- file.path(src, "archive", contents$name, contents$id)
+  ## Theoretically we could do this faster in parallel; not sure if
+  ## we're CPU or IO bound really.
+  message("Reading metadata")
   res <- lapply(contents, function(p) {
-    if (verbose) {
-      message(paste0(p, "..."), appendLF = FALSE)
-    }
+    message(paste0(p, "..."), appendLF = FALSE)
     ret <- tryCatch(
-      orderly_metadata_to_outpack(p, root_outpack$config),
+      orderly_metadata_to_outpack(p, hash_algorithm),
       error = identity)
     fail <- inherits(ret, "error")
-    if (verbose) {
-      message(if (fail) "FAIL" else "ok")
-    }
+    message(if (fail) "FAIL" else "ok")
     ret
   })
 
-  browser()
-
+  err <- vapply(res, inherits, TRUE, "error")
+  if (any(err)) {
+    stop("cope with failed migration...")
+  }
   res <- res[order(vapply(res, "[[", "", "id"))]
-  saveRDS(res, "res.rds")
 
+  message("Importing packets")
+  for (x in res) {
+    message(sprintf("%s/%s", x$name, x$id))
+    p <- file.path(src, "archive", x$name, x$id)
+    outpack:::outpack_insert_packet(p, x$json, dest)
+  }
 
+  dest
 }
 
-orderly_metadata_to_outpack <- function(path, cfg_outpack) {
+
+orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   data <- readRDS(file.path(path, "orderly_run.rds"))
 
   time <- list(start = data$time - data$meta$elapsed,
@@ -61,10 +92,6 @@ orderly_metadata_to_outpack <- function(path, cfg_outpack) {
   found <- dir(path, recursive = TRUE, all.files = TRUE, no.. = TRUE)
   extra <- setdiff(found, c(files, ignore))
 
-  if (length(extra) > 0) {
-    browser()
-  }
-
   if (is.null(data$meta$depends)) {
     depends <- NULL
   } else {
@@ -89,10 +116,6 @@ orderly_metadata_to_outpack <- function(path, cfg_outpack) {
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
   session <- outpack:::outpack_session_info(data$session_info)
-
-  ## TODO: this is the root, not a config, or we pass just the config
-  ## in which is fine
-  hash_algorithm <- cfg_outpack$core$hash_algorithm
 
   f_artefacts <- function(x, outputs) {
     list(description = jsonlite::unbox(x$description),
@@ -149,4 +172,16 @@ orderly_metadata_to_outpack <- function(path, cfg_outpack) {
   list(id = id,
        name = name,
        json = json)
+}
+
+
+## Try to fail fast if we don't have a complete archive
+check_complete_tree <- function(path) {
+  contents <- orderly::orderly_list_archive(path)
+  p <- file.path(path, "archive", contents$name, contents$id, "orderly_run.rds")
+  d <- lapply(p, readRDS)
+  used <- lapply(d, function(el) unique(el$meta$depends$id))
+  if (!all(unlist(used) %in% contents$id)) {
+    stop("orderly graph is incomplete")
+  }
 }
