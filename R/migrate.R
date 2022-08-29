@@ -108,7 +108,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   }
 
   parameters <- data$meta$parameters
-  if (class(parameters) == "data.frame") {
+  if (inherits(parameters, "data.frame")) {
     ## Seen in native-201910-201710-compare-impact/20200603-103158-9a8cb992
     parameters <- as.list(parameters)
   }
