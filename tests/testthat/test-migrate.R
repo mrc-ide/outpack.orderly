@@ -56,3 +56,36 @@ test_that("refuse to migrate incomplete graph", {
   expect_error(suppressMessages(orderly2outpack(src2, tempfile())),
                "orderly graph is incomplete")
 })
+
+
+test_that("test weird special cases", {
+  src <- orderly_demo_archive()
+  cmp <- suppressMessages(orderly2outpack(src, tempfile()))
+  contents <- orderly::orderly_list_archive(src)
+
+  ## 1: missing dependency index
+  id1 <- contents$id[contents$name == "use_dependency"][[1]]
+  path <- file.path(src, "archive", "use_dependency", id1, "orderly_run.rds")
+  data <- readRDS(path)
+  data$meta$depends$index <- NULL
+  saveRDS(data, path)
+
+  ## 2: data frame parameters
+  id2 <- contents$id[contents$name == "other"][[1]]
+  path <- file.path(src, "archive", "other", id2, "orderly_run.rds")
+  data <- readRDS(path)
+  data$meta$parameters <- as.data.frame(data$meta$parameters)
+  saveRDS(data, path)
+
+  ## Do the migration
+  res <- suppressMessages(orderly2outpack(src, tempfile()))
+
+  ## Check everything is the same
+  root_cmp <- outpack::outpack_root_open(cmp)
+  root_res <- outpack::outpack_root_open(res)
+
+  expect_identical(root_cmp$metadata(id1, full = TRUE),
+                   root_res$metadata(id1, full = TRUE))
+  expect_identical(root_cmp$metadata(id2, full = TRUE),
+                   root_res$metadata(id2, full = TRUE))
+})
