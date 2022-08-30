@@ -37,19 +37,10 @@ orderly2outpack <- function(src, dest) {
   ## we're CPU or IO bound really.
   message("Reading metadata")
   res <- lapply(contents, function(p) {
-    message(paste0(p, "..."), appendLF = FALSE)
-    ret <- tryCatch(
-      orderly_metadata_to_outpack(p, hash_algorithm),
-      error = identity)
-    fail <- inherits(ret, "error")
-    message(if (fail) "FAIL" else "ok")
-    ret
+    message(p)
+    orderly_metadata_to_outpack(p, hash_algorithm)
   })
 
-  err <- vapply(res, inherits, TRUE, "error")
-  if (any(err)) {
-    stop("cope with failed migration...")
-  }
   res <- res[order(vapply(res, "[[", "", "id"))]
 
   message("Importing packets")
@@ -84,8 +75,8 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   hash_found <- withr::with_dir(path, outpack:::hash_files(files, "md5"))
   hash_err <- hash_expected != hash_found
   if (any(hash_err)) {
-    message(sprintf("*** Some hashes do not agree for %s/%s:", name, id))
-    message(paste(sprintf("  - %s", files[hash_err]), collapse = "\n"))
+    stop(paste0(sprintf("Some hashes do not agree for %s/%s:\n", name, id),
+                paste(sprintf("  - %s", files[hash_err]), collapse = "\n")))
   }
 
   ignore <- c("orderly_run.rds", "orderly.log")
