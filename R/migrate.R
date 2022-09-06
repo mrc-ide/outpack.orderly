@@ -75,8 +75,8 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   hash_found <- withr::with_dir(path, outpack:::hash_files(files, "md5"))
   hash_err <- hash_expected != hash_found
   if (any(hash_err)) {
-    stop(paste0(sprintf("Some hashes do not agree for %s/%s:\n", name, id),
-                paste(sprintf("  - %s", files[hash_err]), collapse = "\n")))
+    message(paste0(sprintf("Some hashes do not agree for %s/%s:\n", name, id),
+                   paste(sprintf("  - %s", files[hash_err]), collapse = "\n")))
   }
 
   ignore <- c("orderly_run.rds", "orderly.log")
