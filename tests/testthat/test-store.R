@@ -30,5 +30,5 @@ test_that("prevent use of 'move' argument with link store", {
   saveRDS(runif(10), p)
   h <- outpack:::hash_file(p)
   obj <- file_store_link$new(tempfile())
-  expect_error((obj$put(p, h, TRUE), "Can't move files into a link store")
+  expect_error(obj$put(p, h, TRUE), "Can't move files into a link store")
 })
