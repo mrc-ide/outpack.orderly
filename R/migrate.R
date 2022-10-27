@@ -28,20 +28,29 @@
 ##' @export
 orderly2outpack <- function(src, dest, link = FALSE) {
   if (file.exists(dest)) {
-    stop("Destination already exists")
+    existing <- dir(dest, all.files = TRUE, no.. = TRUE)
+    if (!identical(existing, ".outpack")) {
+      stop("Destination directory is not a bare outpack destination")
+    }
+    root_outpack <- outpack::outpack_root_open(dest, FALSE)
+  } else {
+    root_outpack <- outpack::outpack_init(dest,
+                                          path_archive = NULL,
+                                          use_file_store = TRUE,
+                                          require_complete_tree = TRUE)
   }
-  root_outpack <- outpack::outpack_init(dest,
-                                        path_archive = NULL,
-                                        use_file_store = TRUE,
-                                        require_complete_tree = TRUE)
   hash_algorithm <- root_outpack$config$core$hash_algorithm
 
   cfg_orderly <- orderly::orderly_config(src)
   src <- cfg_orderly$root
   message("Checking we can migrate this orderly archive")
   check_complete_tree(src)
+
+  known <- root_outpack$index()$unpacked$packet
   contents <- orderly::orderly_list_archive(src)
+  contents <- contents[!(contents$id %in% known), ]
   contents <- file.path(src, "archive", contents$name, contents$id)
+
   ## Theoretically we could do this faster in parallel; not sure if
   ## we're CPU or IO bound really.
   message("Reading metadata")
