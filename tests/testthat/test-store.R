@@ -1,4 +1,5 @@
 test_that("can create link-based file store", {
+  skip_on_os("windows")
   tmp <- tempfile()
   obj <- file_store_link$new(tmp)
   expect_equal(obj$list(), character(0))
