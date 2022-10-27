@@ -16,8 +16,9 @@ test_that("migration destination must not yet exist", {
   src <- orderly_demo_archive()
   dest <- tempfile()
   dir.create(dest)
+  file.create(file.path(dest, "anything"))
   expect_error(orderly2outpack(src, dest),
-               "Destination already exists")
+               "Destination directory is not a bare outpack destination")
 })
 
 
