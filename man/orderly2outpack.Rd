@@ -4,7 +4,7 @@
 \alias{orderly2outpack}
 \title{Migrate orderly to outpack}
 \usage{
-orderly2outpack(src, dest)
+orderly2outpack(src, dest, link = FALSE)
 }
 \arguments{
 \item{src}{Path to the orderly archive to migrate. This must be
@@ -15,6 +15,15 @@ pulls)}
 will be created with no user-visible archive directory, with a
 file store, and requiring a full tree (i.e., in a suitable
 configuration to use as an upstream source).}
+
+\item{link}{Logical, indicating if the file store should be hard
+links to the existing orderly archive, rather than copies of the
+files. Doing this carries some risk and constraints: must be on
+the same file system, can't make files readonly, changes
+propagated both ways. As a result, only do this where you are
+confident that nothing will alter files in the source archive!
+The use case here is in continually migrating an orderly
+repository.}
 }
 \value{
 The path to the newly created archive
