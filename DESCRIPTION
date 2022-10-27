@@ -9,9 +9,24 @@ Description: Description of the pacakge in more than one full sentence.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1
 URL: https://github.com/mrc-ide/outpack.orderly
 BugReports: https://github.com/mrc-ide/outpack.orderly/issues
+Imports:
+    jsonlite,
+    jsonvalidate,
+    orderly,
+    orderly2,
+    outpack,
+    withr
 Suggests:
-    testthat (>= 3.0.0)
+    markdown,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    zip
 Config/testthat/edition: 3
+Remotes:
+    ropensci/jsonvalidate,
+    mrc-ide/outpack,
+    vimc/orderly,
+    vimc/orderly2
