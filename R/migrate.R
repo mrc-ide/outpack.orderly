@@ -15,24 +15,42 @@
 ##'   file store, and requiring a full tree (i.e., in a suitable
 ##'   configuration to use as an upstream source).
 ##'
+##' @param link Logical, indicating if the file store should be hard
+##'   links to the existing orderly archive, rather than copies of the
+##'   files. Doing this carries some risk and constraints: must be on
+##'   the same file system, can't make files readonly, changes
+##'   propagated both ways. As a result, only do this where you are
+##'   confident that nothing will alter files in the source archive!
+##'   The use case here is in continually migrating an orderly
+##'   repository.
+##'
 ##' @return The path to the newly created archive
 ##' @export
-orderly2outpack <- function(src, dest) {
+orderly2outpack <- function(src, dest, link = FALSE) {
   if (file.exists(dest)) {
-    stop("Destination already exists")
+    existing <- dir(dest, all.files = TRUE, no.. = TRUE)
+    if (!identical(existing, ".outpack")) {
+      stop("Destination directory is not a bare outpack destination")
+    }
+    root_outpack <- outpack::outpack_root_open(dest, FALSE)
+  } else {
+    root_outpack <- outpack::outpack_init(dest,
+                                          path_archive = NULL,
+                                          use_file_store = TRUE,
+                                          require_complete_tree = TRUE)
   }
-  root_outpack <- outpack::outpack_init(dest,
-                                        path_archive = NULL,
-                                        use_file_store = TRUE,
-                                        require_complete_tree = TRUE)
   hash_algorithm <- root_outpack$config$core$hash_algorithm
 
   cfg_orderly <- orderly::orderly_config(src)
   src <- cfg_orderly$root
   message("Checking we can migrate this orderly archive")
   check_complete_tree(src)
+
+  known <- root_outpack$index()$unpacked$packet
   contents <- orderly::orderly_list_archive(src)
+  contents <- contents[!(contents$id %in% known), ]
   contents <- file.path(src, "archive", contents$name, contents$id)
+
   ## Theoretically we could do this faster in parallel; not sure if
   ## we're CPU or IO bound really.
   message("Reading metadata")
@@ -43,11 +61,16 @@ orderly2outpack <- function(src, dest) {
 
   res <- res[order(vapply(res, "[[", "", "id"))]
 
+  if (link) {
+    message("Linking files, rather than copying them, into the file store")
+    root_outpack$files <- file_store_link$new(root_outpack$files$path)
+  }
+
   message("Importing packets")
   for (x in res) {
     message(sprintf("%s/%s", x$name, x$id))
     p <- file.path(src, "archive", x$name, x$id)
-    outpack:::outpack_insert_packet(p, x$json, dest)
+    outpack:::outpack_insert_packet(p, x$json, root_outpack)
   }
 
   dest
@@ -132,7 +155,10 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     role = c(data$meta$file_info_inputs$file_purpose,
              rep("dependency", NROW(data$meta$depends))))
 
-  schema <- orderly2:::custom_metadata_schema()
+  ## NOTE: assuming empty custom metadata, seems fair at first. This
+  ## is only used to access plugins, and later we might want to
+  ## support this properly for VIMC db migrations?
+  schema <- orderly2:::custom_metadata_schema(list())
 
   orderly <- list(
     "artefacts" = artefacts,
