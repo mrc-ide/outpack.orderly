@@ -58,7 +58,7 @@ hours.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">orderly2outpack</span><span class="op">(</span><span class="va">src</span>, <span class="va">dest</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">orderly2outpack</span><span class="op">(</span><span class="va">src</span>, <span class="va">dest</span>, link <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -74,6 +74,17 @@ pulls)</p></dd>
 will be created with no user-visible archive directory, with a
 file store, and requiring a full tree (i.e., in a suitable
 configuration to use as an upstream source).</p></dd>
+
+
+<dt>link</dt>
+<dd><p>Logical, indicating if the file store should be hard
+links to the existing orderly archive, rather than copies of the
+files. Doing this carries some risk and constraints: must be on
+the same file system, can't make files readonly, changes
+propagated both ways. As a result, only do this where you are
+confident that nothing will alter files in the source archive!
+The use case here is in continually migrating an orderly
+repository.</p></dd>
 
 </dl></div>
     <div id="value">
