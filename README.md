@@ -16,6 +16,18 @@ To install `outpack.orderly`:
 remotes::install_github("mrc-ide/outpack.orderly", upgrade = FALSE)
 ```
 
+## Usage from docker
+
+Pass the `src` and `destination` directories as command line arguments.
+Note that the `dest` directory must not exist, so you have to mount a parent directory 
+into the container and specify the desired dest as a subdirectory:
+```
+docker run -v /orderly/path:/orderly \
+           -v /outpack/parent:/parent \
+           mrcide/outpack.orderly /orderly /parent/outpack
+```
+
+
 ## License
 
 MIT © Imperial College of Science, Technology and Medicine
