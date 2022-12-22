@@ -29,7 +29,7 @@
 orderly2outpack <- function(src, dest, link = FALSE) {
   if (file.exists(dest)) {
     existing <- dir(dest, all.files = TRUE, no.. = TRUE)
-    if (!identical(existing, ".outpack")) {
+    if (length(existing) == 0 || !identical(existing, ".outpack")) {
       stop("Destination directory is not a bare outpack destination")
     }
     root_outpack <- outpack::outpack_root_open(dest, FALSE)
