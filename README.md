@@ -16,6 +16,29 @@ To install `outpack.orderly`:
 remotes::install_github("mrc-ide/outpack.orderly", upgrade = FALSE)
 ```
 
+## Usage
+
+```
+
+Usage:
+  orderly2outpack.R <src> <dest> [--once]
+
+Options:
+  --once      Perform migration once.
+
+```
+
+## Usage from docker
+
+You will have to first mount the `orderly` and `outpack` directories as volumes.
+`orderly` can be readonly. 
+
+```
+docker run -v /orderly/path:/orderly:ro \
+           -v /outpack/path:/outpack \
+           mrcide/outpack.orderly /orderly /outpack --once
+```
+
 ## License
 
 MIT © Imperial College of Science, Technology and Medicine

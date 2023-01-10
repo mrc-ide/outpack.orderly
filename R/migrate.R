@@ -27,8 +27,8 @@
 ##' @return The path to the newly created archive
 ##' @export
 orderly2outpack <- function(src, dest, link = FALSE) {
-  if (file.exists(dest)) {
-    existing <- dir(dest, all.files = TRUE, no.. = TRUE)
+  existing <- dir(dest, all.files = TRUE, no.. = TRUE)
+  if (length(existing) > 0) {
     if (!identical(existing, ".outpack")) {
       stop("Destination directory is not a bare outpack destination")
     }

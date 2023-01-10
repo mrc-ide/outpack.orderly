@@ -12,13 +12,17 @@ test_that("can migrate demo", {
 })
 
 
-test_that("migration destination must not yet exist", {
+test_that("migration destination must not have non-outpack files in", {
   src <- orderly_demo_archive()
   dest <- tempfile()
   dir.create(dest)
   file.create(file.path(dest, "anything"))
   expect_error(orderly2outpack(src, dest),
                "Destination directory is not a bare outpack destination")
+
+  empty_dir <- file.path(dest, "empty")
+  dir.create(empty_dir)
+  orderly2outpack(src, empty_dir)
 })
 
 
