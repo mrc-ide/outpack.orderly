@@ -3,15 +3,21 @@
 'orderly2outpack.
 
 Usage:
-  orderly2outpack.R <src> <dest> [--once]
+orderly2outpack.R <src> <dest> [--once] [--hourly]
 
 Options:
-  --once      Perform migration once.
+--once      Perform migration once.
 
 ' -> doc
 
 arguments <- docopt::docopt(doc)
-if (!arguments$once) {
-    stop("Only one-time migrations supported. Please pass --once option.")
+if (arguments$once) {
+    outpack.orderly::orderly2outpack(arguments$src, arguments$dest)
+} else if (arguments$hourly) {
+    write(c("#!/usr/bin/env Rscript", "\n", deparse({
+        outpack.orderly::orderly2outpack(arguments$src, arguments$dest)
+    })), "/etc/cron.hourly/outpack")
+    system2("cron","-f")
+} else {
+    stop("Frequency of migration not specified. Please pass either --once or --hourly option.")
 }
-outpack.orderly::orderly2outpack(arguments$src, arguments$dest)

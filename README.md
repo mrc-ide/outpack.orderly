@@ -25,6 +25,7 @@ Usage:
 
 Options:
   --once      Perform migration once.
+  --hourly    Schedule hourly migration using cron.
 
 ```
 
@@ -37,6 +38,15 @@ You will have to first mount the `orderly` and `outpack` directories as volumes.
 docker run -v /orderly/path:/orderly:ro \
            -v /outpack/path:/outpack \
            mrcide/outpack.orderly /orderly /outpack --once
+```
+
+If running hourly, you most likely want to run in detached mode:
+
+```
+docker run -v /orderly/path:/orderly:ro \
+           -v /outpack/path:/outpack \
+           -d \
+           mrcide/outpack.orderly /orderly /outpack --hourly
 ```
 
 ## License
