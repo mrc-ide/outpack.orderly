@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+set -e
+HERE=$(dirname $0)
+. $HERE/common
+
+SRC=/tmp/src
+DEST=/tmp/dest
+
+mkdir $DEST -p
+
+function cleanup() {
+   rm $SRC -rf
+   rm $DEST -rf
+   docker rm orderly2outpack -f
+}
+
+trap cleanup EXIT
+
+Rscript $HERE/create_test_archive.R $SRC
+
+docker pull $TAG_SHA
+docker run -v $SRC:/orderly:ro \
+           -v $DEST:/outpack \
+           --name orderly2outpack \
+           --env USER_ID=$UID \
+           -d \
+           $TAG_SHA /orderly /outpack --hourly
+
+# don't exit before the migration has happened
+sleep 5
+
+if test -f "$DEST/.outpack/config.json"; then
+  exit 0
+else
+  exit 1
+fi

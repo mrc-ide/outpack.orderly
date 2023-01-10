@@ -1,6 +1,6 @@
 FROM rocker/r-ver:4.1.0
 
-RUN apt-get update && apt-get install -y cron
+RUN apt-get update && apt-get install -y cron sudo
 
 COPY R /orderly2outpack/R
 COPY DESCRIPTION /orderly2outpack
@@ -11,5 +11,9 @@ RUN R -e "install.packages('remotes')"
 RUN R -e "remotes::install_local('/orderly2outpack', dependencies=T)"
 
 COPY orderly2outpack.R /orderly2outpack
+COPY docker/entrypoint /orderly2outpack
 
-ENTRYPOINT ["Rscript", "/orderly2outpack/orderly2outpack.R"]
+ENV USER_ID=1
+RUN useradd -m outpack
+
+ENTRYPOINT ["/orderly2outpack/entrypoint"]
