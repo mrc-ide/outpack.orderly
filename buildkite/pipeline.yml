@@ -4,5 +4,5 @@ steps:
 
   - wait
 
-  -label: ":mag: Test"
-   command: docker/test
+  - label: ":mag: Test"
+    command: docker/test
