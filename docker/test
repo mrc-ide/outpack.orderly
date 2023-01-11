@@ -6,8 +6,10 @@ HERE=$(dirname $0)
 
 SRC=/tmp/src
 DEST=/tmp/dest
+ORDERLY_IMAGE=vimc/orderly:master
 
 mkdir $DEST -p
+mkdir $SRC -p
 
 function cleanup() {
    rm $SRC -rf
@@ -17,7 +19,14 @@ function cleanup() {
 
 trap cleanup EXIT
 
-Rscript $HERE/create_test_archive.R $SRC
+docker pull $ORDERLY_IMAGE
+docker run --rm \
+    --entrypoint 'create_orderly_demo.sh' \
+    -u $UID \
+    -v $SRC:/orderly \
+    -w "/orderly" \
+    $ORDERLY_IMAGE \
+    "."
 
 docker pull $TAG_SHA
 docker run -v $SRC:/orderly:ro \
@@ -25,10 +34,12 @@ docker run -v $SRC:/orderly:ro \
            --name orderly2outpack \
            --env USER_ID=$UID \
            -d \
-           $TAG_SHA /orderly /outpack --hourly
+           $TAG_SHA /orderly/demo /outpack --custom="* * * * *"
 
-# don't exit before the migration has happened
-sleep 5
+# this is annoying but can't figure out another way around this
+sleep 60
+
+docker logs orderly2outpack
 
 if test -f "$DEST/.outpack/config.json"; then
   exit 0

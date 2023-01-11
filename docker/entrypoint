@@ -3,12 +3,14 @@ set -e
 
 usermod -u "$USER_ID" outpack
 
-FILE="/home/outpack/outpack.hourly"
+FILE="/home/outpack/orderly2outpack"
+
+# this has to be run as the outpack user so that created files are not owned by root
 sudo -u outpack Rscript /orderly2outpack/orderly2outpack.R "$@"
 
+# if the file has been created, add to the outpack user's crontab
 if test -f "$FILE"; then
     chmod +x $FILE
-    echo "@hourly Rscript /home/outpack/outpack.hourly >> /var/log/outpack.log 2>&1" >> tab.txt
-    crontab -u outpack tab.txt
-    cron -f
+    crontab -u outpack /home/outpack/tab.txt
+    cron && tail -f /home/outpack/cron.log
 fi
