@@ -16,37 +16,40 @@ To install `outpack.orderly`:
 remotes::install_github("mrc-ide/outpack.orderly", upgrade = FALSE)
 ```
 
-## Usage
+Recommended usage is from docker.
+
+## Usage from docker
 
 ```
 
 Usage:
-  orderly2outpack.R <src> <dest> [--once]
+  mrcide/outpack.orderly <src> <dest> [--once] [--custom=<cron-schedule> ]
 
 Options:
-  --once      Perform migration once.
-  --hourly    Schedule hourly migration using cron.
+  --once                      Perform migration once.
+  --custom=<cron-schedule>    Schedule migration using cron.
 
 ```
 
-## Usage from docker
-
 You will have to first mount the `orderly` and `outpack` directories as volumes.
-`orderly` can be readonly. 
+`orderly` can be readonly. To have the job run as a non-root user (to avoid created files being owned by root),
+pass the desired uid as an env var, as shown.
 
 ```
 docker run -v /orderly/path:/orderly:ro \
            -v /outpack/path:/outpack \
+           --env USER_ID=$UID \
            mrcide/outpack.orderly /orderly /outpack --once
 ```
 
-If running hourly, you most likely want to run in detached mode:
+If running on a schedule, you most likely want to run in detached mode:
 
 ```
 docker run -v /orderly/path:/orderly:ro \
            -v /outpack/path:/outpack \
+           --env USER_ID=$UID \
            -d \
-           mrcide/outpack.orderly /orderly /outpack --hourly
+           mrcide/outpack.orderly /orderly /outpack --custom="* * * * *"
 ```
 
 ## License
