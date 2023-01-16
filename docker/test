@@ -4,17 +4,16 @@ set -e
 HERE=$(dirname $0)
 . $HERE/common
 
-SRC=/tmp/src
-DEST=/tmp/dest
 ORDERLY_IMAGE=vimc/orderly:master
 
-mkdir $DEST -p
-mkdir $SRC -p
+docker volume create test-orderly
+docker volume create test-outpack
 
 function cleanup() {
-   rm $SRC -rf
-   rm $DEST -rf
    docker rm orderly2outpack -f
+   docker rm outpack-util -f
+   docker volume rm test-orderly
+   docker volume rm test-outpack
 }
 
 trap cleanup EXIT
@@ -22,26 +21,29 @@ trap cleanup EXIT
 docker pull $ORDERLY_IMAGE
 docker run --rm \
     --entrypoint 'create_orderly_demo.sh' \
-    -u $UID \
-    -v $SRC:/orderly \
+    -v test-orderly:/orderly \
     -w "/orderly" \
     $ORDERLY_IMAGE \
     "."
 
 docker pull $TAG_SHA
-docker run -v $SRC:/orderly:ro \
-           -v $DEST:/outpack \
+docker run -v test-orderly:/orderly:ro \
+           -v test-outpack:/outpack \
            --name orderly2outpack \
-           --env USER_ID=$UID \
            -d \
            $TAG_SHA /orderly/demo /outpack --custom="* * * * *"
 
+# wait up to a minute for scheduled task to run
 # this is annoying but can't figure out another way around this
 sleep 60
 
 docker logs orderly2outpack
 
-if test -f "$DEST/.outpack/config.json"; then
+docker run -d -v test-outpack:/outpack --name outpack-util busybox true
+docker cp outpack-util:/outpack/.outpack/config.json $HERE
+
+if test -f "$HERE/config.json"; then
+  rm $HERE/config.json
   exit 0
 else
   exit 1

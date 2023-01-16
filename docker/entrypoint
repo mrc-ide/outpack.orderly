@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-usermod -u "$USER_ID" outpack
+FILE="/orderly2outpack/orderly2outpack"
 
-FILE="/home/outpack/orderly2outpack"
+Rscript /orderly2outpack/schedule.R "$@"
 
-# this has to be run as the outpack user so that created files are not owned by root
-sudo -u outpack Rscript /orderly2outpack/orderly2outpack.R "$@"
-
-# if the file has been created, add to the outpack user's crontab
+# if the file has been created, start yacron
 if test -f "$FILE"; then
     chmod +x $FILE
-    crontab -u outpack /home/outpack/tab.txt
-    cron && tail -f /home/outpack/cron.log
+    echo "*** Starting scheduler ***"
+    cat /orderly2outpack/schedule.yml
+    yacron -c /orderly2outpack/schedule.yml
 fi

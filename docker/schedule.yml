@@ -1,0 +1,8 @@
+jobs:
+  - name: orderly2outpack-cron",
+    command: /usr/local/bin/Rscript /orderly2outpack/orderly2outpack
+    failsWhen:
+      producesStderr: false
+      producesStdout: false
+      nonzeroReturn: true
+      always: false

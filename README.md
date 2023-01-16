@@ -32,22 +32,19 @@ Options:
 ```
 
 You will have to first mount the `orderly` and `outpack` directories as volumes.
-`orderly` can be readonly. To have the job run as a non-root user (to avoid created files being owned by root),
-pass the desired uid as an env var, as shown.
+`orderly` can be readonly. 
 
 ```
-docker run -v /orderly/path:/orderly:ro \
-           -v /outpack/path:/outpack \
-           --env USER_ID=$UID \
+docker run -v orderly:/orderly:ro \
+           -v outpack:/outpack \
            mrcide/outpack.orderly /orderly /outpack --once
 ```
 
 If running on a schedule, you most likely want to run in detached mode:
 
 ```
-docker run -v /orderly/path:/orderly:ro \
-           -v /outpack/path:/outpack \
-           --env USER_ID=$UID \
+docker run -v orderly:/orderly:ro \
+           -v outpack:/outpack \
            -d \
            mrcide/outpack.orderly /orderly /outpack --custom="* * * * *"
 ```

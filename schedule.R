@@ -7,7 +7,7 @@ Usage:
 
 Options:
   --once                     Perform migration once.
-  --custom=<schedule>   Schedule migration with provided cron schedule.
+  --custom=<schedule>        Schedule migration with provided cron schedule.
 
 ' -> doc
 
@@ -18,10 +18,12 @@ if (arguments$once) {
 } else if (!is.null(arguments$custom)) {
     fn <- deparse(substitute(outpack.orderly::orderly2outpack(src, dest),
                              list(src=arguments$src, dest=arguments$dest)))
-    write(c("#!/usr/bin/env Rscript", "\n", fn), "~/orderly2outpack")
+    write(c("#!/usr/bin/env Rscript", "\n", fn), "/orderly2outpack/orderly2outpack")
     freq <- arguments$custom
-    crontab <- "/usr/local/bin/Rscript /home/outpack/orderly2outpack >> /home/outpack/cron.log 2>&1"
-    write(c("SHELL=/bin/bash", paste(freq, crontab)), "~/tab.txt")
+    write(paste0("    schedule: \"", freq, "\""),
+          "/orderly2outpack/schedule.yml",
+          append = TRUE
+    )
 } else {
     stop("Frequency of migration not specified. Please pass either --once or --custom option.")
 }
