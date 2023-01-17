@@ -1,6 +1,9 @@
+web:
+  listen:
+    - http://0.0.0.0:1234
+    - unix:///tmp/yacron.sock
 jobs:
-  - name: orderly2outpack-cron",
-    command: /usr/local/bin/Rscript /orderly2outpack/orderly2outpack
+  - name: orderly2outpack-cron
     failsWhen:
       producesStderr: false
       producesStdout: false

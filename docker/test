@@ -5,15 +5,15 @@ HERE=$(dirname $0)
 . $HERE/common
 
 ORDERLY_IMAGE=vimc/orderly:master
+DEST=/tmp/dest
 
 docker volume create test-orderly
-docker volume create test-outpack
+mkdir -p $DEST
 
 function cleanup() {
    docker rm orderly2outpack -f
-   docker rm outpack-util -f
    docker volume rm test-orderly
-   docker volume rm test-outpack
+   rm $DEST -rf
 }
 
 trap cleanup EXIT
@@ -28,22 +28,20 @@ docker run --rm \
 
 docker pull $TAG_SHA
 docker run -v test-orderly:/orderly:ro \
-           -v test-outpack:/outpack \
+           -v $DEST:/outpack \
            --name orderly2outpack \
+           --network host \
            -d \
-           $TAG_SHA /orderly/demo /outpack --custom="* * * * *"
+           -u $UID \
+           $TAG_SHA /orderly/demo /outpack --minutes=5
 
-# wait up to a minute for scheduled task to run
-# this is annoying but can't figure out another way around this
-sleep 60
+sleep 2
 
-docker logs orderly2outpack
+curl -X POST http://127.0.0.1:1234/jobs/orderly2outpack-cron/start
 
-docker run -d -v test-outpack:/outpack --name outpack-util busybox true
-docker cp outpack-util:/outpack/.outpack/config.json $HERE
+sleep 2
 
-if test -f "$HERE/config.json"; then
-  rm $HERE/config.json
+if test -f "$DEST/.outpack/config.json"; then
   exit 0
 else
   exit 1

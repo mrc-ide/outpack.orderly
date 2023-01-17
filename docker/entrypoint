@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-FILE="/orderly2outpack/orderly2outpack"
+SCHEDULE_FILE=$(mktemp /tmp/schedule.XXX.yml)
+cp /orderly2outpack/schedule.yml "$SCHEDULE_FILE"
 
-Rscript /orderly2outpack/schedule.R "$@"
+Rscript /orderly2outpack/schedule.R "$@" >>"$SCHEDULE_FILE"
 
-# if the file has been created, start yacron
-if test -f "$FILE"; then
-    chmod +x $FILE
-    echo "*** Starting scheduler ***"
-    cat /orderly2outpack/schedule.yml
-    yacron -c /orderly2outpack/schedule.yml
+if [[ "$*" != *"--once"* ]]; then
+  chmod +x "$SCHEDULE_FILE"
+  echo "*** Starting scheduler ***"
+  cat "$SCHEDULE_FILE"
+  yacron -c "$SCHEDULE_FILE"
 fi
