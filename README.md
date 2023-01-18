@@ -16,27 +16,60 @@ To install `outpack.orderly`:
 remotes::install_github("mrc-ide/outpack.orderly", upgrade = FALSE)
 ```
 
-## Usage
+## Usage from docker
 
 ```
 
 Usage:
-  orderly2outpack.R <src> <dest> [--once]
+  mrcide/outpack.orderly <src> <dest> [--once] [--minutes=<x>] [--custom=<cron-schedule>]
 
 Options:
-  --once      Perform migration once.
+  --once                      Perform migration once.
+  --minutes=<x>               Schedule migration every x minutes.
+  --custom=<cron-schedule>    Schedule migration using cron.
 
 ```
-
-## Usage from docker
 
 You will have to first mount the `orderly` and `outpack` directories as volumes.
 `orderly` can be readonly. 
 
 ```
-docker run -v /orderly/path:/orderly:ro \
-           -v /outpack/path:/outpack \
+docker run -v orderly:/orderly:ro \
+           -v outpack:/outpack \
            mrcide/outpack.orderly /orderly /outpack --once
+```
+
+If running on a schedule, you most likely want to run in detached mode:
+
+```
+docker run -v orderly:/orderly:ro \
+           -v outpack:/outpack \
+           -d \
+           mrcide/outpack.orderly /orderly /outpack --custom="* * * * *"
+```
+
+If not using named volumes, you probably want to run as the host user to avoid 
+root owned files being created:
+
+```
+docker run -v /some/path/orderly:/orderly:ro \
+           -v /another/path/outpack:/outpack \
+           -d \
+           -u $UID \
+           mrcide/outpack.orderly /orderly /outpack --custom="* * * * *"
+```
+
+
+## Usage without docker
+
+Recommended usage is from docker but to run a one-off migration on metal,
+first install this package from source and then use `./outpack2orderly.R`:
+
+```
+
+Usage:
+  ./outpack2orderly.R <src> <dest>
+
 ```
 
 ## License

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -e
+HERE=$(dirname $0)
+. $HERE/common
+
+ORDERLY_IMAGE=vimc/orderly:master
+DEST=/tmp/dest
+
+docker volume create test-orderly
+mkdir -p $DEST
+
+function cleanup() {
+   docker rm orderly2outpack -f
+   docker volume rm test-orderly
+   rm $DEST -rf
+}
+
+trap cleanup EXIT
+
+docker pull $ORDERLY_IMAGE
+docker run --rm \
+    --entrypoint 'create_orderly_demo.sh' \
+    -v test-orderly:/orderly \
+    -w "/orderly" \
+    $ORDERLY_IMAGE \
+    "."
+
+docker pull $TAG_SHA
+docker run -v test-orderly:/orderly:ro \
+           -v $DEST:/outpack \
+           --name orderly2outpack \
+           --network host \
+           -d \
+           -u $UID \
+           $TAG_SHA /orderly/demo /outpack --minutes=5
+
+sleep 2
+
+curl -X POST http://127.0.0.1:1234/jobs/orderly2outpack-cron/start
+
+sleep 2
+
+if test -f "$DEST/.outpack/config.json"; then
+  exit 0
+else
+  exit 1
+fi

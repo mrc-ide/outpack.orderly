@@ -1,3 +1,8 @@
 steps:
   - label: ":whale: Build"
     command: docker/build
+
+  - wait
+
+  - label: ":mag: Test"
+    command: docker/test
