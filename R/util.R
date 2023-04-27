@@ -11,3 +11,13 @@ scalar <- function(x) {
 data_frame <- function(...) {
   data.frame(..., stringsAsFactors = FALSE, check.names = FALSE)
 }
+
+
+dquote <- function(x) {
+  sprintf('"%s"', x)
+}
+
+
+dquote_if_required <- function(x) {
+  if (grepl("[-+ /]", x)) dquote(x) else x
+}
