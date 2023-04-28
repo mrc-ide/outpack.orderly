@@ -18,7 +18,7 @@ Imports:
     jsonlite,
     jsonvalidate,
     orderly,
-    orderly3,
+    orderly3 (>= 0.1.1),
     outpack,
     withr
 Suggests:
@@ -31,4 +31,4 @@ Remotes:
     ropensci/jsonvalidate,
     mrc-ide/outpack,
     vimc/orderly,
-    mrc-ide/orderly3
+    mrc-ide/orderly3@vimc-7095

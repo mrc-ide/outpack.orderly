@@ -40,12 +40,13 @@ orderly2outpack_src <- function(path, delete_yml = FALSE) {
   orderly:::yaml_write(cfg_new, file.path(path, "orderly_config.yml"))
 
   for (i in seq_along(nms)) {
-    writeLines(dat_new[[i]],
+    writeLines(dat_new[[i]]$code,
                file.path(path, "src", nms[[i]], "orderly.R"))
   }
 
   if (delete_yml) {
-    ## TODO: also drop the script
+    ## file.remove(file.path(path, "src", nms,
+    ##                       vapply(dat_new, "[[", "", "script")))
     file.remove(file.path(path, "src", nms, "orderly.yml"))
   }
 
@@ -108,11 +109,11 @@ src_migrate_src <- function(name, cfg) {
     src_migrate_script)
 
   dat <- orderly:::orderly_recipe$new(name, cfg, TRUE)
-  ret <- character(0)
+  code <- character(0)
   for (f in migrate) {
-    ret <- add_section(ret, f(cfg, dat))
+    code <- add_section(code, f(cfg, dat))
   }
-  ret
+  list(code = code, script = dat$script)
 }
 
 
@@ -216,8 +217,8 @@ src_migrate_sources <- function(cfg, dat) {
 
 src_migrate_script <- function(cfg, dat) {
   code <- readLines(file.path(cfg$root, "src", dat$name, dat$script))
-  ## code <- sub("orderly::orderly_run_info", "orderly3::orderly_run_info",
-  ##             code, fixed = TRUE)
+  code <- sub("orderly::orderly_run_info", "orderly3::orderly_run_info",
+              code, fixed = TRUE)
   code
 }
 
