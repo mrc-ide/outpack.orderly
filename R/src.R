@@ -9,13 +9,12 @@
 ##'
 ##' @param delete_yml Logical, indicating if the `orderly.yml` files
 ##'   should be deleted.
-##' 
-##' @param overwrite Logical, indicating if we should overwrite even
-##'   if `orderly.R` files are present.
 ##'
 ##' @return Nothing, called for side effects only
 ##' @export
-orderly2outpack_src <- function(path, delete_yml = FALSE, overwrite = FALSE) {
+orderly2outpack_src <- function(path, delete_yml = FALSE) {
+  ## TODO: control over strict mode here would be nice; I imagine that
+  ## many people would want to pull that in immediately?
   cfg <- orderly::orderly_config(path)
   path <- cfg$root
 
@@ -27,41 +26,52 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, overwrite = FALSE) {
   nms <- nms[i]
 
   i <- file.exists(file.path(path, "src", nms, "orderly.R"))
-  if (any(i) && !overwrite) {
+  if (any(i)) {
     stop("Some source directories already contain 'orderly.R' files")
   }
 
-  ## cfg_new <- src_migrate_cfg(cfg$raw)
+  cfg_new <- src_migrate_cfg(cfg$raw)
   dat_new <- lapply(nms, src_migrate_src, cfg)
 
-  ## TODO: we need a new name for orderly_config.yml or something that
-  ## we can use to correctly update to use the new version.
+  if (!delete_yml) {
+    fs::file_copy(file.path(path, "orderly_config.yml"),
+                  file.path(path, "orderly_config.yml.orig"))
+  }
+  orderly:::yaml_write(cfg_new, file.path(path, "orderly_config.yml"))
 
-  ## fs::file_copy(file.path(path, "orderly_config.yml"),
-  ##               file.path(path, "orderly_config.yml.orig"),
-  ##               overwrite = overwrite)
+  for (i in seq_along(nms)) {
+    writeLines(dat_new[[i]],
+               file.path(path, "src", nms[[i]], "orderly.R"))
+  }
 
-  ## yaml_write(src_migrate_cfg(cfg$raw),
-  ##            file.path(path, "orderly_config.yml"))
+  if (delete_yml) {
+    ## TODO: also drop the script
+    file.remove(file.path(path, "src", nms, "orderly.yml"))
+  }
+
+  invisible(path)
 }
 
 
-src_migrate_cfg <- function(path) {
-  cfg <- orderly::orderly_config(path)
+src_migrate_cfg <- function(cfg) {
   ## Can't do: fields, changelog, tags, remote, vault
   ##
-  ## of these vault and remote will get supported later
+  ## of these :
+  ##
+  ## * vault and remote will get supported later, I think
+  ## * fields and tags are obsolete, tags is unused
+  ## * changelog needs a total overhaul
 
   ## Note that this does not at all preserve the comments, and we
-  ## should direct the user to do that.
-
+  ## should direct the user to do that, but we might be able to do
+  ## something on that by the time we use this for real.
   ret <- list()
   if (!is.null(cfg$global_resources)) {
     ret$global_resources <- cfg$global_resources
   }
 
   if (!is.null(cfg$database)) {
-    ret$plugins <- list("orderly3.db" = raw$database)
+    ret$plugins <- list("orderly3.db" = cfg$database)
   }
 
   ret
@@ -78,12 +88,12 @@ src_migrate_src <- function(name, cfg) {
   ## description/displayname/fields bit in orderly3 though to avoid
   ## losing potentially interesting information from orginal orderly
   ## reports.
-  
+
   ## TODO: some control parameter here to tune 'instance' or not
   ## through views, data, connection; easier once we have variable
   ## interpolation in orderly3 configuration, plus a helper in the db
   ## plugin.
-  
+
   migrate <- list(
     src_migrate_parameters,
     src_migrate_global_resources,
@@ -97,7 +107,7 @@ src_migrate_src <- function(name, cfg) {
     src_migrate_sources,
     src_migrate_script)
 
-  dat <- orderly:::orderly_recipe$new(name, cfg, TRUE)  
+  dat <- orderly:::orderly_recipe$new(name, cfg, TRUE)
   ret <- character(0)
   for (f in migrate) {
     ret <- add_section(ret, f(cfg, dat))
@@ -134,8 +144,13 @@ src_migrate_resources <- function(cfg, dat) {
   if (is.null(dat$resources)) {
     return(NULL)
   }
-  sprintf("orderly3::orderly_resource(%s)",
-          paste(dquote(dat$resources), collapse = ", "))
+  fmt <- "orderly3::orderly_resource(%s)"
+  if (length(dat$resources) == 1L) {
+    args <- dquote(dat$resources)
+  } else {
+    args <-sprintf("c(%s)", paste(dquote(dat$resources), collapse = ", "))
+  }
+  sprintf(fmt, args)
 }
 
 
@@ -150,7 +165,7 @@ src_migrate_depends <- function(cfg, dat) {
     browser()
   }
 
-  ret <- character()  
+  ret <- character()
   for (i in nrow(dat$depends)) {
     name <- dat$depends$name[[i]]
     query <- dat$depends$id[[i]]
@@ -172,15 +187,15 @@ src_migrate_depends <- function(cfg, dat) {
 
 
 src_migrate_artefacts <- function(cfg, dat) {
-  fmt <- "ordery3::orderly_artefact(%s)"
+  fmt <- "orderly3::orderly_artefact(%s)"
   ret <- character()
-  for (i in seq_len(nrow(dat$artefacts))) {  
+  for (i in seq_len(nrow(dat$artefacts))) {
     description <- dat$artefacts[1, ]$description
     filenames <- dat$artefacts[1, ]$filenames
     if (length(filenames) == 1L) {
       args <- sprintf('"%s", "%s"', description, filenames)
     } else {
-      args <- sprintf('\n  "%s"\n  c(%s))', description,
+      args <- sprintf('\n  "%s",\n  c(%s)', description,
                       paste(dquote(filenames), collapse = ", "))
     }
     ret <- c(ret, sprintf(fmt, args))
@@ -190,7 +205,7 @@ src_migrate_artefacts <- function(cfg, dat) {
 
 
 src_migrate_packages <- function(cfg, dat) {
-  sprintf("package(%s)", dat$packages)
+  sprintf("library(%s)", dat$packages)
 }
 
 
@@ -200,7 +215,10 @@ src_migrate_sources <- function(cfg, dat) {
 
 
 src_migrate_script <- function(cfg, dat) {
-  readLines(file.path(cfg$root, "src", dat$name, dat$script))
+  code <- readLines(file.path(cfg$root, "src", dat$name, dat$script))
+  ## code <- sub("orderly::orderly_run_info", "orderly3::orderly_run_info",
+  ##             code, fixed = TRUE)
+  code
 }
 
 
@@ -212,12 +230,12 @@ src_migrate_db_views <- function(cfg, dat) {
   ret <- character(0)
   for (i in names(dat$views)) {
     x <- dat$views[[i]]
-    args <- c(query = x$query, as = x$as)
+    args <- c(query = x$query, as = i)
     if (!is.null(x$database)) {
       args[["database"]] <- x$database
     }
     args_str <- paste(sprintf('%s = "%s"', names(args), unname(args)),
-                      collapse = "\n  ")
+                      collapse = ",\n  ")
     ret <- c(ret, sprintf(fmt, args_str))
   }
   ret
@@ -232,12 +250,12 @@ src_migrate_db_data <- function(cfg, dat) {
   ret <- character(0)
   for (i in names(dat$data)) {
     x <- dat$data[[i]]
-    args <- c(query = x$query, as = x$as)
+    args <- c(query = x$query, as = i)
     if (!is.null(x$database)) {
       args[["database"]] <- x$database
     }
     args_str <- paste(sprintf('%s = "%s"', names(args), unname(args)),
-                      collapse = "\n  ")
+                      collapse = ",\n  ")
     ret <- c(ret, sprintf(fmt, args_str))
   }
   ret
