@@ -10,9 +10,13 @@
 ##' @param delete_yml Logical, indicating if the `orderly.yml` files
 ##'   should be deleted.
 ##'
+##' @param strict Logical, indicating if we should enable
+##'   [`orderly3::orderly_strict_mode()`] in the resulting source
+##'   files
+##'
 ##' @return Nothing, called for side effects only
 ##' @export
-orderly2outpack_src <- function(path, delete_yml = FALSE) {
+orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
   ## TODO: control over strict mode here would be nice; I imagine that
   ## many people would want to pull that in immediately?
   cfg <- orderly::orderly_config(path)
@@ -31,7 +35,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE) {
   }
 
   cfg_new <- src_migrate_cfg(cfg$raw)
-  dat_new <- lapply(nms, src_migrate_src, cfg)
+  dat_new <- lapply(nms, src_migrate_src, cfg, strict)
 
   if (!delete_yml) {
     fs::file_copy(file.path(path, "orderly_config.yml"),
@@ -49,6 +53,8 @@ orderly2outpack_src <- function(path, delete_yml = FALSE) {
     ##                       vapply(dat_new, "[[", "", "script")))
     file.remove(file.path(path, "src", nms, "orderly.yml"))
   }
+
+  outpack::outpack_init(path)
 
   invisible(path)
 }
@@ -79,7 +85,7 @@ src_migrate_cfg <- function(cfg) {
 }
 
 
-src_migrate_src <- function(name, cfg) {
+src_migrate_src <- function(name, cfg, strict) {
   ## TODO: not yet handled - changelog (overhauling this),
   ## description, displayname, environment, fields, readme, secrets,
   ## tags - some of these we might just have some general "extra
@@ -109,7 +115,7 @@ src_migrate_src <- function(name, cfg) {
     src_migrate_script)
 
   dat <- orderly:::orderly_recipe$new(name, cfg, TRUE)
-  code <- character(0)
+  code <- if (strict) "orderly3::orderly_strict_mode()" else character(0)
   for (f in migrate) {
     code <- add_section(code, f(cfg, dat))
   }
@@ -191,8 +197,8 @@ src_migrate_artefacts <- function(cfg, dat) {
   fmt <- "orderly3::orderly_artefact(%s)"
   ret <- character()
   for (i in seq_len(nrow(dat$artefacts))) {
-    description <- dat$artefacts[1, ]$description
-    filenames <- dat$artefacts[1, ]$filenames
+    description <- dat$artefacts[i, ]$description
+    filenames <- dat$artefacts[i, ]$filenames
     if (length(filenames) == 1L) {
       args <- sprintf('"%s", "%s"', description, filenames)
     } else {
@@ -211,7 +217,8 @@ src_migrate_packages <- function(cfg, dat) {
 
 
 src_migrate_sources <- function(cfg, dat) {
-  sprintf('source("%s")', dat$sources)
+  c(sprintf('orderly3::orderly_resource("%s")', dat$sources),
+    sprintf('source("%s")', dat$sources))
 }
 
 
