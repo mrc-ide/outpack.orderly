@@ -12,13 +12,12 @@
 ##'
 ##' @param strict Logical, indicating if we should enable
 ##'   [`orderly3::orderly_strict_mode()`] in the resulting source
-##'   files
+##'   files. You can always add this later to specific cases (or
+##'   remove it).
 ##'
 ##' @return Nothing, called for side effects only
 ##' @export
 orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
-  ## TODO: control over strict mode here would be nice; I imagine that
-  ## many people would want to pull that in immediately?
   cfg <- orderly::orderly_config(path)
   path <- cfg$root
 
@@ -87,14 +86,11 @@ src_migrate_cfg <- function(cfg) {
 
 src_migrate_src <- function(name, cfg, strict) {
   ## TODO: not yet handled - changelog (overhauling this),
-  ## description, displayname, environment, fields, readme, secrets,
+  ## environment, fields, readme, secrets,
   ## tags - some of these we might just have some general "extra
   ## metadata" field really, but it would also be good to check in
   ## various locations which of these are really used in a meaningful
-  ## way. I think we will have to support the
-  ## description/displayname/fields bit in orderly3 though to avoid
-  ## losing potentially interesting information from orginal orderly
-  ## reports.
+  ## way.
 
   ## TODO: some control parameter here to tune 'instance' or not
   ## through views, data, connection; easier once we have variable
@@ -102,6 +98,7 @@ src_migrate_src <- function(name, cfg, strict) {
   ## plugin.
 
   migrate <- list(
+    src_migrate_description,
     src_migrate_parameters,
     src_migrate_global_resources,
     src_migrate_resources,
@@ -120,6 +117,22 @@ src_migrate_src <- function(name, cfg, strict) {
     code <- add_section(code, f(cfg, dat))
   }
   list(code = code, script = dat$script)
+}
+
+
+src_migrate_description <- function(cfg, dat) {
+  if (is.null(dat$displayname) && is.null(dat$description) &&
+      is.null(dat$custom)) {
+    return(NULL)
+  }
+  args <- list(display = dat$displayname,
+               long = dat$description,
+               custom = dat$fields)
+  args <- args[!vapply(args, is.null, TRUE)]
+  args_str <- paste(sprintf("\n  %s = %s", names(args),
+                            vapply(args, deparse1, "", width.cutoff = 500)),
+                    collapse = ",")
+  sprintf("orderly3::orderly_description(%s)", args_str)
 }
 
 

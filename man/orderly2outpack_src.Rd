@@ -14,7 +14,8 @@ should be deleted.}
 
 \item{strict}{Logical, indicating if we should enable
 \code{\link[orderly3:orderly_strict_mode]{orderly3::orderly_strict_mode()}} in the resulting source
-files}
+files. You can always add this later to specific cases (or
+remove it).}
 }
 \value{
 Nothing, called for side effects only

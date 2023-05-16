@@ -21,3 +21,8 @@ dquote <- function(x) {
 dquote_if_required <- function(x) {
   if (grepl("[-+ /]", x)) dquote(x) else x
 }
+
+
+deparse1 <- function(x, ...) {
+  paste(deparse(x, ...), collapse = "\n")
+}
