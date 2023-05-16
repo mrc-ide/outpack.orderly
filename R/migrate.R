@@ -157,19 +157,28 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     role = c(data$meta$file_info_inputs$file_purpose,
              rep("dependency", NROW(data$meta$depends))))
 
+  ## TODO: this can be updated now, and should be where db bits are
+  ## present; we can detect this from the root configuration really.
+
   ## NOTE: assuming empty custom metadata, seems fair at first. This
   ## is only used to access plugins, and later we might want to
   ## support this properly for VIMC db migrations?
   schema <- orderly3:::custom_metadata_schema(list())
+
+  custom <- data$meta$extra_fields
+  if (!is.null(custom)) {
+    custom <- lapply(custom, scalar)
+  }
 
   orderly <- list(
     "artefacts" = artefacts,
     "packages" = data$meta$packages %||% character(0),
     "global" = global,
     "role" = role,
-    "displayname" = scalar(data$meta$displayname),
-    "description" = scalar(data$meta$description),
-    "custom" = NULL)
+    "description" = list(
+      "display" = scalar(data$meta$displayname),
+      "long" = scalar(data$meta$description),
+      "custom" = custom))
   orderly_json <- jsonlite::toJSON(
     orderly, pretty = FALSE, auto_unbox = FALSE,
     json_verbatim = TRUE, na = "null", null = "null")
