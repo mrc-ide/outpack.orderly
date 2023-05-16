@@ -166,12 +166,6 @@ src_migrate_depends <- function(cfg, dat) {
     return(NULL)
   }
 
-  ## There are somehow no examples of this in the demo data, which is
-  ## a surprise really.
-  if (nrow(dat$depends) > 1) {
-    browser()
-  }
-
   ret <- character()
   for (i in nrow(dat$depends)) {
     name <- dat$depends$name[[i]]
