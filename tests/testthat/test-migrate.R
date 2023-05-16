@@ -22,7 +22,7 @@ test_that("migration destination must not have non-outpack files in", {
 
   empty_dir <- file.path(dest, "empty")
   dir.create(empty_dir)
-  orderly2outpack(src, empty_dir)
+  suppressMessages(orderly2outpack(src, empty_dir))
 })
 
 
