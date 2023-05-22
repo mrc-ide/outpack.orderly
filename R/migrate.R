@@ -35,6 +35,7 @@ orderly2outpack <- function(src, dest, link = FALSE) {
     root_outpack <- outpack::outpack_root_open(dest, FALSE)
   } else {
     root_outpack <- outpack::outpack_init(dest,
+                                          logging_console = FALSE,
                                           path_archive = NULL,
                                           use_file_store = TRUE,
                                           require_complete_tree = TRUE)
@@ -116,6 +117,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     depends <- unname(lapply(
       split(data$meta$depends, data$meta$depends$index), function(x) {
         list(packet = x$id[[1]],
+             query = x$id_requested[[1]],
              files = data_frame(here = x$as,
                                 there = x$filename))
       }))
