@@ -117,6 +117,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     depends <- unname(lapply(
       split(data$meta$depends, data$meta$depends$index), function(x) {
         list(packet = x$id[[1]],
+             query = x$id_requested[[1]],
              files = data_frame(here = x$as,
                                 there = x$filename))
       }))
