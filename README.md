@@ -63,12 +63,12 @@ docker run -v /some/path/orderly:/orderly:ro \
 ## Usage without docker
 
 Recommended usage is from docker but to run a one-off migration on metal,
-first install this package from source and then use `./outpack2orderly.R`:
+first install this package from source and then use `./orderly2outpack.R`:
 
 ```
 
 Usage:
-  ./outpack2orderly.R <src> <dest>
+  ./orderly2outpack.R <src> <dest>
 
 ```
 
