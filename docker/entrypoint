@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+SCHEDULE_FILE=$(mktemp /tmp/schedule.XXX.yml)
+cp /orderly2outpack/schedule.yml "$SCHEDULE_FILE"
+
+Rscript /orderly2outpack/schedule.R "$@" >>"$SCHEDULE_FILE"
+
+if [[ "$*" != *"--once"* ]]; then
+  chmod +x "$SCHEDULE_FILE"
+  echo "*** Starting scheduler ***"
+  cat "$SCHEDULE_FILE"
+  yacron -c "$SCHEDULE_FILE"
+fi

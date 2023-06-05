@@ -12,12 +12,17 @@ test_that("can migrate demo", {
 })
 
 
-test_that("migration destination must not yet exist", {
+test_that("migration destination must not have non-outpack files in", {
   src <- orderly_demo_archive()
   dest <- tempfile()
   dir.create(dest)
+  file.create(file.path(dest, "anything"))
   expect_error(orderly2outpack(src, dest),
-               "Destination already exists")
+               "Destination directory is not a bare outpack destination")
+
+  empty_dir <- file.path(dest, "empty")
+  dir.create(empty_dir)
+  suppressMessages(orderly2outpack(src, empty_dir))
 })
 
 
@@ -88,4 +93,37 @@ test_that("test weird special cases", {
                    root_res$metadata(id1, full = TRUE))
   expect_identical(root_cmp$metadata(id2, full = TRUE),
                    root_res$metadata(id2, full = TRUE))
+})
+
+
+test_that("can create link-based file store", {
+  src <- orderly_demo_archive()
+  dst <- suppressMessages(orderly2outpack(src, tempfile(), link = TRUE))
+
+  path_files <- file.path(dst, ".outpack", "files")
+  files <- dir(path_files, recursive = TRUE, include.dirs = FALSE,
+               full.names = TRUE)
+  info <- fs::file_info(files)
+  expect_true(all(info$hard_links == 2))
+})
+
+
+test_that("can update archive", {
+  src <- orderly_demo_archive()
+  dst <- suppressMessages(orderly2outpack(src, tempfile(), link = TRUE))
+
+  id <- suppressMessages(
+    orderly::orderly_run("minimal", root = src, echo = FALSE))
+  suppressMessages(orderly::orderly_commit(id, root = src))
+
+  root <- outpack::outpack_root_open(dst, locate = FALSE)
+
+  expect_false(id %in% names(root$index(TRUE)$metadata))
+
+  expect_equal(
+    suppressMessages(orderly2outpack(src, dst, link = TRUE)),
+    dst)
+
+  expect_true(id %in% names(root$index(TRUE)$metadata))
+  expect_true(id %in% root$index(TRUE)$unpacked$packet)
 })
