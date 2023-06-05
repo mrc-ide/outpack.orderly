@@ -96,6 +96,41 @@ test_that("test weird special cases", {
 })
 
 
+test_that("test missing dependencies", {
+  src <- orderly_demo_archive()
+  cmp <- suppressMessages(orderly2outpack(src, tempfile()))
+  contents <- orderly::orderly_list_archive(src)
+
+  ## Dependencies with same name as artefacts
+  id <- contents$id[contents$name == "use_dependency"][[1]]
+  path <- file.path(src, "archive", "use_dependency", id, "orderly_run.rds")
+  data <- readRDS(path)
+  file.remove(file.path(src, "archive", "use_dependency", id, data$meta$depends$as))
+  data$meta$depends$as <- data$meta$file_info_artefacts$filename[[1]]
+  saveRDS(data, path)
+
+  ## Do the migration
+  res <- suppressMessages(orderly2outpack(src, tempfile()))
+
+  ## Check everything is the same except for dependency info
+  root_cmp <- outpack::outpack_root_open(cmp)$metadata(id, full = TRUE)
+  root_res <- outpack::outpack_root_open(res)$metadata(id, full = TRUE)
+
+  diff <- all.equal(root_cmp, root_res)
+
+  expect_length(diff, 10)
+  expect_identical(root_cmp$custom$orderly$role[1:2], root_res$custom$orderly$role)
+  expect_equal(nrow(root_res$depends), 0)
+  expect_identical(root_cmp$files[1:4, ], root_res$files)
+
+  root_res$custom$orderly$role <- root_cmp$custom$orderly$role
+  root_res$depends <- root_cmp$depends
+  root_res$files <- root_cmp$files
+  root_res$hash <- root_cmp$hash
+  expect_identical(root_cmp, root_res)
+})
+
+
 test_that("can create link-based file store", {
   src <- orderly_demo_archive()
   dst <- suppressMessages(orderly2outpack(src, tempfile(), link = TRUE))

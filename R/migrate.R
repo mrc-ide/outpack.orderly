@@ -91,16 +91,16 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   # in some pathological cases, the artefacts can have overwritten
   # dependencies pulled in with the same filename
   # so exclude any such dependencies from the file list
-  depends <- data$meta$depends$as[!(data$meta$depends$as %in% artefacts)]
-
+  data$meta$depends <- data$meta$depends[!(data$meta$depends$as %in% artefacts), ]
   files <- c(data$meta$file_info_inputs$filename,
              artefacts,
-             depends)
+             data$meta$depends$as)
 
   hash_expected <- sprintf(
     "md5:%s", c(data$meta$file_info_inputs$file_hash,
                 data$meta$file_info_artefacts$file_hash,
-                data$meta$depends$hash[!(data$meta$depends$as %in% artefacts)]))
+                data$meta$depends$hash))
+
   stopifnot(length(hash_expected) == length(files),
             length(files) > 0)
 
