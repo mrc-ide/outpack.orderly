@@ -9,3 +9,4 @@ jobs:
       producesStdout: false
       nonzeroReturn: true
       always: false
+    concurrencyPolicy: Forbid
