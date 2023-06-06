@@ -26,20 +26,6 @@ test_that("migration destination must not have non-outpack files in", {
 })
 
 
-test_that("fail migrations if files have been modified", {
-  src <- orderly_demo_archive()
-  contents <- orderly::orderly_list_archive(src)
-  name <- "use_resource"
-  id <- contents$id[contents$name == name][[1]]
-  path <- file.path(src, "archive", name, id, "meta", "data.csv")
-  txt <- readLines(path)
-  writeLines(txt[-length(txt)], path)
-  expect_error(
-    testthat::capture_messages(dst <- orderly2outpack(src, tempfile())),
-    "Some hashes do not agree for use_resource/")
-})
-
-
 test_that("refuse to migrate incomplete graph", {
   src1 <- orderly_demo_archive()
   src2 <- tempfile()

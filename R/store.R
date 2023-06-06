@@ -12,7 +12,7 @@ file_store_link <- R6::R6Class(
       if (move) {
         stop("Can't move files into a link store")
       }
-      outpack:::hash_validate(src, hash)
+      outpack:::hash_validate_file(src, hash)
       dst <- self$filename(hash)
       if (!fs::file_exists(dst)) {
         fs::dir_create(dirname(dst))
