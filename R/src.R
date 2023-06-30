@@ -22,16 +22,17 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
   path <- cfg$root
 
   nms <- orderly::orderly_list(path)
-  i <- file.exists(file.path(path, "src", nms, "orderly.yml"))
-  if (!any(i)) {
-    stop("Did not find any src directories containing 'orderly.yml'")
-  }
-  nms <- nms[i]
 
   i <- file.exists(file.path(path, "src", nms, "orderly.R"))
   if (any(i)) {
     stop("Some source directories already contain 'orderly.R' files")
   }
+
+  i <- file.exists(file.path(path, "src", nms, "orderly.yml"))
+  if (!any(i)) {
+    stop("Did not find any src directories containing 'orderly.yml'")
+  }
+  nms <- nms[i]
 
   cfg_new <- src_migrate_cfg(cfg$raw)
   dat_new <- lapply(nms, src_migrate_src, cfg, strict)

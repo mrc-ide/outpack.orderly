@@ -24,8 +24,7 @@ test_that("refuse to migrate a directory that does not conain orderly.yml", {
 
 
 test_that("refuse to migrate directories containing both old and new source", {
-  path <- orderly::orderly_example("demo")
-  file.create(file.path(path, "src", "spaces", "a resource with spaces.csv"))
+  path <- orderly_demo_src()
   dir.create(file.path(path, "src", "new"))
   file.create(file.path(path, "src", "new", "orderly.R"))
   expect_error(orderly2outpack_src(path),
@@ -56,4 +55,27 @@ test_that("can preserve original files after migration", {
 
   expect_equal(unname(withr::with_dir(path2, tools::md5sum(kept))),
                unname(h1))
+})
+
+
+test_that("can add strict mode", {
+  path <- orderly_demo_src()
+  nms <- orderly::orderly_list(path)
+  orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE)
+  str <- vapply(file.path(path, "src", nms, "orderly.R"),
+                function(p) readLines(p, n = 1), "",
+                USE.NAMES = FALSE)
+  expect_equal(str, rep("orderly3::orderly_strict_mode()", length(nms)))
+})
+
+
+test_that("can not add strict mode", {
+  path <- orderly_demo_src()
+  nms <- orderly::orderly_list(path)
+  orderly2outpack_src(path, delete_yml = TRUE, strict = FALSE)
+  str <- "orderly3::orderly_strict_mode()"
+  expect_false(
+    any(vapply(file.path(path, "src", nms, "orderly.R"),
+               function(p) any(grepl(str, readLines(p), fixed = TRUE)),
+               TRUE)))
 })
