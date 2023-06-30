@@ -48,8 +48,8 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
   }
 
   if (delete_yml) {
-    ## file.remove(file.path(path, "src", nms,
-    ##                       vapply(dat_new, "[[", "", "script")))
+    file.remove(file.path(path, "src", nms,
+                          vapply(dat_new, "[[", "", "script")))
     file.remove(file.path(path, "src", nms, "orderly.yml"))
   }
 
