@@ -26,6 +26,27 @@ test_that("migration destination must not have non-outpack files in", {
 })
 
 
+test_that("notify migrations if files have been modified, but continue", {
+  src <- orderly_demo_archive()
+  contents <- orderly::orderly_list_archive(src)
+  name <- "use_resource"
+  id <- contents$id[contents$name == name][[1]]
+  path <- file.path(src, "archive", name, id, "meta", "data.csv")
+  txt <- readLines(path)
+  writeLines(txt[-length(txt)], path)
+  res <- testthat::evaluate_promise(
+    orderly2outpack(src, tempfile()))
+  expect_match(
+    res$messages,
+    "Some hashes do not agree for use_resource/.*meta/data.csv",
+    all = FALSE)
+  expect_true(file.exists(res$result))
+
+  root <- outpack::outpack_root_open(dst)
+  expect_setequal(names(root$index()$metadata), contents$id)
+})
+
+
 test_that("refuse to migrate incomplete graph", {
   src1 <- orderly_demo_archive()
   src2 <- tempfile()
