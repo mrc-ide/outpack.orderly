@@ -111,5 +111,5 @@ test_that("can update archive", {
     dst)
 
   expect_true(id %in% names(root$index(TRUE)$metadata))
-  expect_true(id %in% root$index(TRUE)$unpacked$packet)
+  expect_true(id %in% root$index(TRUE)$unpacked)
 })
