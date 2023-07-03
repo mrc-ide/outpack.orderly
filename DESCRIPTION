@@ -32,5 +32,5 @@ Remotes:
     ropensci/jsonvalidate,
     mrc-ide/outpack,
     mrc-ide/orderly3,
-    mrc-ide/orderly.db,
+    mrc-ide/orderly3.db,
     vimc/orderly
