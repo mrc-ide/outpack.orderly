@@ -181,11 +181,11 @@ src_migrate_depends <- function(cfg, dat) {
   }
 
   ret <- character()
-  for (i in nrow(dat$depends)) {
-    name <- dat$depends$name[[i]]
-    query <- dat$depends$id[[i]]
-    there <- dat$depends$filename[[i]]
-    here <- dat$depends$as[[i]]
+  for (el in split(dat$depends, dat$depends$index)) {
+    name <- el$name[[1]]
+    query <- el$id[[1]]
+    there <- el$filename
+    here <- el$as
     use <- sprintf("%s = %s", dquote_if_required(here), dquote(there))
     if (length(there) == 1) {
       str <- sprintf('orderly3::orderly_dependency("%s", "%s", c(%s))',
@@ -299,7 +299,7 @@ src_migrate_db_connection <- function(cfg, dat) {
 add_section <- function(curr, new) {
   if (length(new) == 0) {
     curr
-  } else if (is.null(curr)) {
+  } else if (length(curr) == 0) {
     new
   } else {
     c(curr, "", new)

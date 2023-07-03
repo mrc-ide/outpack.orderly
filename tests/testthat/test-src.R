@@ -79,3 +79,66 @@ test_that("can not add strict mode", {
                function(p) any(grepl(str, readLines(p), fixed = TRUE)),
                TRUE)))
 })
+
+
+test_that("can migrate empty dependencies", {
+  expect_null(src_migrate_depends(list(), list()))
+})
+
+
+test_that("can migrate single, simple, dependency", {
+  depends <- data.frame(
+    id = "latest",
+    index = 1,
+    name = "name",
+    draft = NA,
+    filename = "filename.csv",
+    as = "incoming.csv",
+    is_pinned = FALSE)
+  expect_equal(
+    src_migrate_depends(list(), list(depends = depends)),
+    paste('orderly3::orderly_dependency("name", "latest",',
+          'c(incoming.csv = "filename.csv"))'))
+})
+
+
+test_that("can migrate single, multi-piece, dependency", {
+  depends <- data.frame(
+    id = "latest(parameter:x = 1)",
+    index = 1,
+    name = "name",
+    draft = NA,
+    filename = c("a.csv", "b.csv"),
+    as = c("d/a.csv", "d/b.csv"),
+    is_pinned = FALSE)
+  expect_equal(
+    src_migrate_depends(list(), list(depends = depends)),
+    paste("orderly3::orderly_dependency(",
+          '  "name",',
+          '  "latest(parameter:x = 1)",',
+          '  c("d/a.csv" = "a.csv",',
+          '    "d/b.csv" = "b.csv"))',
+          sep = "\n"))
+})
+
+
+test_that("can migrate multiple, multi-piece, dependency", {
+  depends <- data.frame(
+    id = "latest(parameter:x = 1)",
+    index = c(1, 1, 2),
+    name = "name",
+    draft = NA,
+    filename = c("a.csv", "b.csv", "a.csv"),
+    as = c("1.csv", "x.csv", "y.csv"),
+    is_pinned = FALSE)
+  expect_equal(
+    src_migrate_depends(list(), list(depends = depends)),
+    c(paste("orderly3::orderly_dependency(",
+            '  "name",',
+            '  "latest(parameter:x = 1)",',
+            '  c("1.csv" = "a.csv",',
+            '    x.csv = "b.csv"))',
+            sep = "\n"),
+      paste('orderly3::orderly_dependency("name", "latest(parameter:x = 1)",',
+            'c(y.csv = "a.csv"))')))
+})

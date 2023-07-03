@@ -42,7 +42,7 @@ test_that("notify migrations if files have been modified, but continue", {
     all = FALSE)
   expect_true(file.exists(res$result))
 
-  root <- outpack::outpack_root_open(dst)
+  root <- outpack::outpack_root_open(res$result)
   expect_setequal(names(root$index()$metadata), contents$id)
 })
 

@@ -19,7 +19,11 @@ dquote <- function(x) {
 
 
 dquote_if_required <- function(x) {
-  if (grepl("[-+ /]", x)) dquote(x) else x
+  i <- grepl("([-+ /]|^[^A-Za-z])", x)
+  if (any(i)) {
+    x[i] <- dquote(x[i])
+  }
+  x
 }
 
 
