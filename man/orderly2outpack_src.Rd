@@ -13,7 +13,7 @@ orderly2outpack_src(path, delete_yml = FALSE, strict = FALSE)
 should be deleted.}
 
 \item{strict}{Logical, indicating if we should enable
-\code{\link[orderly3:orderly_strict_mode]{orderly2::orderly_strict_mode()}} in the resulting source
+\code{\link[orderly2:orderly_strict_mode]{orderly2::orderly_strict_mode()}} in the resulting source
 files. You can always add this later to specific cases (or
 remove it).}
 }
