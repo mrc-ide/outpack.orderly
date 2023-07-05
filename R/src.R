@@ -25,7 +25,8 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
 
   i <- file.exists(file.path(path, "src", nms, "orderly.R"))
   if (any(i)) {
-    stop("Some source directories already contain 'orderly.R' files")
+    stop("Some source directories already contain 'orderly.R' files: ",
+         paste(nms[i], collapse = ", "))
   }
 
   i <- file.exists(file.path(path, "src", nms, "orderly.yml"))
@@ -145,7 +146,7 @@ src_migrate_parameters <- function(cfg, dat) {
   ## orderly3, might need some updating.
   fmt <- "orderly3::orderly_parameters(%s)"
   args <- sprintf("%s = %s", names(dat$parameters),
-                  vapply(dat$parameters, deparse, ""))
+                  vapply(dat$parameters, function(el) deparse1(el$default), ""))
   sprintf(fmt, paste(args, collapse = ", "))
 }
 
@@ -156,7 +157,8 @@ src_migrate_global_resources <- function(cfg, dat) {
   }
   fmt <- "orderly3::orderly_global_resource(%s)"
   args <- sprintf('%s = "%s"',
-                  names(dat$global_resources), unname(dat$global_resources))
+                  dquote_if_required(names(dat$global_resources)),
+                  unname(dat$global_resources))
   sprintf(fmt, paste(args, collapse = ", "))
 }
 

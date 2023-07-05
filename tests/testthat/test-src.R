@@ -27,8 +27,9 @@ test_that("refuse to migrate directories containing both old and new source", {
   path <- orderly_demo_src()
   dir.create(file.path(path, "src", "new"))
   file.create(file.path(path, "src", "new", "orderly.R"))
-  expect_error(orderly2outpack_src(path),
-               "Some source directories already contain 'orderly.R' files")
+  expect_error(
+    orderly2outpack_src(path),
+    "Some source directories already contain 'orderly.R' files: new")
 })
 
 
@@ -141,4 +142,34 @@ test_that("can migrate multiple, multi-piece, dependency", {
             sep = "\n"),
       paste('orderly3::orderly_dependency("name", "latest(parameter:x = 1)",',
             'c(y.csv = "a.csv"))')))
+})
+
+
+test_that("can migrate global resources", {
+  expect_null(src_migrate_global_resources(list(), list()))
+  expect_equal(
+    src_migrate_global_resources(
+      list(),
+      list(global_resources = c(a.csv = "b.csv"))),
+    'orderly3::orderly_global_resource(a.csv = "b.csv")')
+  expect_equal(
+    src_migrate_global_resources(
+      list(),
+      list(global_resources = c("path/a.csv" = "b.csv"))),
+    'orderly3::orderly_global_resource("path/a.csv" = "b.csv")')
+})
+
+
+test_that("can migrate parameters", {
+  expect_null(src_migrate_parameters(list(), list()))
+  expect_equal(
+    src_migrate_parameters(
+      list(),
+      list(parameters = list(a = NULL, b = NULL))),
+    'orderly3::orderly_parameters(a = NULL, b = NULL)')
+  expect_equal(
+    src_migrate_parameters(
+      list(),
+      list(parameters = list(a = list(default = 1), b = list(default = "x")))),
+    'orderly3::orderly_parameters(a = 1, b = "x")')
 })
