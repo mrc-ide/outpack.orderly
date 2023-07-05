@@ -9,7 +9,7 @@ test_that("Can migrate orderly demo directory", {
       withr::with_dir(path, x$before())
     }
     env <- new.env(parent = .GlobalEnv)
-    dat[[i]]$id <- orderly3::orderly_run(x$name, x$parameters, envir = env,
+    dat[[i]]$id <- orderly2::orderly_run(x$name, x$parameters, envir = env,
                                          root = path)
   }
 })
@@ -17,7 +17,8 @@ test_that("Can migrate orderly demo directory", {
 
 test_that("refuse to migrate a directory that does not conain orderly.yml", {
   path <- withr::local_tempdir()
-  file.create(file.path(path, "orderly_config.yml"))
+  writeLines("minimum_orderly_version: 1.99.9",
+             file.path(path, "orderly_config.yml"))
   expect_error(orderly2outpack_src(path),
                "Did not find any src directories containing 'orderly.yml'")
 })
@@ -66,7 +67,7 @@ test_that("can add strict mode", {
   str <- vapply(file.path(path, "src", nms, "orderly.R"),
                 function(p) readLines(p, n = 1), "",
                 USE.NAMES = FALSE)
-  expect_equal(str, rep("orderly3::orderly_strict_mode()", length(nms)))
+  expect_equal(str, rep("orderly2::orderly_strict_mode()", length(nms)))
 })
 
 
@@ -74,7 +75,7 @@ test_that("can not add strict mode", {
   path <- orderly_demo_src()
   nms <- orderly::orderly_list(path)
   orderly2outpack_src(path, delete_yml = TRUE, strict = FALSE)
-  str <- "orderly3::orderly_strict_mode()"
+  str <- "orderly2::orderly_strict_mode()"
   expect_false(
     any(vapply(file.path(path, "src", nms, "orderly.R"),
                function(p) any(grepl(str, readLines(p), fixed = TRUE)),
@@ -98,7 +99,7 @@ test_that("can migrate single, simple, dependency", {
     is_pinned = FALSE)
   expect_equal(
     src_migrate_depends(list(), list(depends = depends)),
-    paste('orderly3::orderly_dependency("name", "latest",',
+    paste('orderly2::orderly_dependency("name", "latest",',
           'c(incoming.csv = "filename.csv"))'))
 })
 
@@ -114,7 +115,7 @@ test_that("can migrate single, multi-piece, dependency", {
     is_pinned = FALSE)
   expect_equal(
     src_migrate_depends(list(), list(depends = depends)),
-    paste("orderly3::orderly_dependency(",
+    paste("orderly2::orderly_dependency(",
           '  "name",',
           '  "latest(parameter:x = 1)",',
           '  c("d/a.csv" = "a.csv",',
@@ -134,13 +135,13 @@ test_that("can migrate multiple, multi-piece, dependency", {
     is_pinned = FALSE)
   expect_equal(
     src_migrate_depends(list(), list(depends = depends)),
-    c(paste("orderly3::orderly_dependency(",
+    c(paste("orderly2::orderly_dependency(",
             '  "name",',
             '  "latest(parameter:x = 1)",',
             '  c("1.csv" = "a.csv",',
             '    x.csv = "b.csv"))',
             sep = "\n"),
-      paste('orderly3::orderly_dependency("name", "latest(parameter:x = 1)",',
+      paste('orderly2::orderly_dependency("name", "latest(parameter:x = 1)",',
             'c(y.csv = "a.csv"))')))
 })
 
@@ -151,12 +152,12 @@ test_that("can migrate global resources", {
     src_migrate_global_resources(
       list(),
       list(global_resources = c(a.csv = "b.csv"))),
-    'orderly3::orderly_global_resource(a.csv = "b.csv")')
+    'orderly2::orderly_global_resource(a.csv = "b.csv")')
   expect_equal(
     src_migrate_global_resources(
       list(),
       list(global_resources = c("path/a.csv" = "b.csv"))),
-    'orderly3::orderly_global_resource("path/a.csv" = "b.csv")')
+    'orderly2::orderly_global_resource("path/a.csv" = "b.csv")')
 })
 
 
@@ -166,10 +167,10 @@ test_that("can migrate parameters", {
     src_migrate_parameters(
       list(),
       list(parameters = list(a = NULL, b = NULL))),
-    'orderly3::orderly_parameters(a = NULL, b = NULL)')
+    'orderly2::orderly_parameters(a = NULL, b = NULL)')
   expect_equal(
     src_migrate_parameters(
       list(),
       list(parameters = list(a = list(default = 1), b = list(default = "x")))),
-    'orderly3::orderly_parameters(a = 1, b = "x")')
+    'orderly2::orderly_parameters(a = 1, b = "x")')
 })

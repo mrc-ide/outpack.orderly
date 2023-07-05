@@ -18,8 +18,8 @@ Imports:
     jsonlite,
     jsonvalidate,
     orderly,
-    orderly3 (>= 0.1.1),
-    orderly3.db,
+    orderly2 (>= 1.99.0),
+    orderly.db,
     outpack (>= 0.4.0),
     withr
 Suggests:
@@ -31,6 +31,6 @@ Config/testthat/edition: 3
 Remotes:
     ropensci/jsonvalidate,
     mrc-ide/outpack,
-    mrc-ide/orderly3,
-    mrc-ide/orderly3.db,
+    mrc-ide/orderly2,
+    mrc-ide/orderly.db,
     vimc/orderly

@@ -163,7 +163,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   ## NOTE: assuming empty custom metadata, seems fair at first. This
   ## is only used to access plugins, and later we might want to
   ## support this properly for VIMC db migrations?
-  schema <- orderly3:::custom_metadata_schema(list())
+  schema <- orderly2:::custom_metadata_schema(list())
 
   custom <- data$meta$extra_fields
   if (!is.null(custom)) {
