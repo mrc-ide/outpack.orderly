@@ -17,7 +17,7 @@ test_that("Can migrate orderly demo directory", {
 
 test_that("refuse to migrate a directory that does not conain orderly.yml", {
   path <- withr::local_tempdir()
-  writeLines("minimum_orderly_version: 1.99.9",
+  writeLines("minimum_orderly_version: 1.7.0",
              file.path(path, "orderly_config.yml"))
   expect_error(orderly2outpack_src(path),
                "Did not find any src directories containing 'orderly.yml'")

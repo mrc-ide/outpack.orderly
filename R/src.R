@@ -73,13 +73,13 @@ src_migrate_cfg <- function(cfg) {
   ## Note that this does not at all preserve the comments, and we
   ## should direct the user to do that, but we might be able to do
   ## something on that by the time we use this for real.
-  ret <- list()
+  ret <- list(minimum_orderly_version = "1.99.0")
   if (!is.null(cfg$global_resources)) {
     ret$global_resources <- cfg$global_resources
   }
 
   if (!is.null(cfg$database)) {
-    ret$plugins <- list("orderly3.db" = cfg$database)
+    ret$plugins <- list("orderly.db" = cfg$database)
   }
 
   ret
@@ -96,7 +96,7 @@ src_migrate_src <- function(name, cfg, strict) {
 
   ## TODO: some control parameter here to tune 'instance' or not
   ## through views, data, connection; easier once we have variable
-  ## interpolation in orderly3 configuration, plus a helper in the db
+  ## interpolation in orderly2 configuration, plus a helper in the db
   ## plugin.
 
   migrate <- list(
@@ -143,7 +143,7 @@ src_migrate_parameters <- function(cfg, dat) {
     return(NULL)
   }
   ## TODO: there's some inconsistency here with pluralisation in
-  ## orderly3, might need some updating.
+  ## orderly2, might need some updating.
   fmt <- "orderly2::orderly_parameters(%s)"
   args <- sprintf("%s = %s", names(dat$parameters),
                   vapply(dat$parameters, function(el) deparse1(el$default), ""))
@@ -235,7 +235,7 @@ src_migrate_sources <- function(cfg, dat) {
 src_migrate_script <- function(cfg, dat) {
   code <- readLines(file.path(cfg$root, "src", dat$name, dat$script))
   code <- sub("orderly1?::orderly_run_info", "orderly2::orderly_run_info",
-              code, fixed = TRUE)
+              code)
   code
 }
 
@@ -244,7 +244,7 @@ src_migrate_db_views <- function(cfg, dat) {
   if (is.null(dat$views)) {
     return(NULL)
   }
-  fmt <- "orderly3.db::orderly_db_view(\n  %s)"
+  fmt <- "orderly.db::orderly_db_view(\n  %s)"
   ret <- character(0)
   for (i in names(dat$views)) {
     x <- dat$views[[i]]
@@ -264,7 +264,7 @@ src_migrate_db_data <- function(cfg, dat) {
   if (is.null(dat$data)) {
     return(NULL)
   }
-  fmt <- "orderly3.db::orderly_db_query(\n  %s)"
+  fmt <- "orderly.db::orderly_db_query(\n  %s)"
   ret <- character(0)
   for (i in names(dat$data)) {
     x <- dat$data[[i]]
@@ -286,7 +286,7 @@ src_migrate_db_connection <- function(cfg, dat) {
   }
 
   ret <- character(0)
-  fmt <- "orderly3.db::orderly_db_connection(%s)"
+  fmt <- "orderly.db::orderly_db_connection(%s)"
   for (i in names(dat$connection)) {
     ## TODO: some control parameter here to tune 'instance' or not.
     args <- c(as = i, database = dat$connection[[i]])
