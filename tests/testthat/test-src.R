@@ -176,6 +176,20 @@ test_that("can migrate parameters", {
 })
 
 
+test_that("can migrate invalid-ish parameters", {
+  expect_equal(
+    src_migrate_parameters(
+      list(),
+      list(parameters = list(a = 1, b = 2))),
+    "orderly2::orderly_parameters(a = 1, b = 2)"  )
+  expect_equal(
+    src_migrate_parameters(
+      list(),
+      list(parameters = list(a = 1, b = NULL))),
+    "orderly2::orderly_parameters(a = 1, b = NULL)")
+})
+
+
 test_that("can migrate queries", {
   expect_equal(
     src_migrate_query("latest(parameter:a == b)", NULL),

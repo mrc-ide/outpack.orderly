@@ -113,7 +113,7 @@ src_migrate_src <- function(name, cfg, strict) {
     src_migrate_sources,
     src_migrate_script)
 
-  dat <- orderly1:::orderly_recipe$new(name, cfg, TRUE)
+  dat <- suppressWarnings(orderly1:::orderly_recipe$new(name, cfg, TRUE))
   code <- if (strict) "orderly2::orderly_strict_mode()" else character(0)
   for (f in migrate) {
     code <- add_section(code, f(cfg, dat))
@@ -145,8 +145,9 @@ src_migrate_parameters <- function(cfg, dat) {
   ## TODO: there's some inconsistency here with pluralisation in
   ## orderly2, might need some updating.
   fmt <- "orderly2::orderly_parameters(%s)"
-  args <- sprintf("%s = %s", names(dat$parameters),
-                  vapply(dat$parameters, function(el) deparse1(el$default), ""))
+  pars <- vcapply(dat$parameters,
+                  function(x) deparse1(if (is.atomic(x)) x else x$default))
+  args <- sprintf("%s = %s", names(pars), pars)
   sprintf(fmt, paste(args, collapse = ", "))
 }
 
@@ -235,7 +236,7 @@ src_migrate_sources <- function(cfg, dat) {
 
 
 src_migrate_script <- function(cfg, dat) {
-  code <- readLines(file.path(cfg$root, "src", dat$name, dat$script))
+  code <- read_lines(file.path(cfg$root, "src", dat$name, dat$script))
   code <- sub("orderly1?::orderly_run_info", "orderly2::orderly_run_info",
               code)
   code

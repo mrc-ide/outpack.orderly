@@ -30,3 +30,13 @@ dquote_if_required <- function(x) {
 deparse1 <- function(x, ...) {
   paste(deparse(x, ...), collapse = "\n")
 }
+
+
+read_lines <- function(...) {
+  readLines(..., warn = FALSE)
+}
+
+
+vcapply <- function(...) {
+  vapply(..., FUN.VALUE = "")
+}
