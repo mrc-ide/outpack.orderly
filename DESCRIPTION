@@ -31,4 +31,4 @@ Remotes:
     ropensci/jsonvalidate,
     mrc-ide/orderly2,
     mrc-ide/orderly.db,
-    orderly=vimc/orderly@vimc-7135
+    orderly1=vimc/orderly@vimc-7135
