@@ -15,9 +15,13 @@
 ##'   files. You can always add this later to specific cases (or
 ##'   remove it).
 ##'
+##' @param dry_run Logical, indicating if we should just run process
+##'   all the data, but not write any changes.
+##'
 ##' @return Nothing, called for side effects only
 ##' @export
-orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
+orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
+                                dry_run = FALSE) {
   cfg <- orderly1::orderly_config(path)
   path <- cfg$root
 
@@ -37,6 +41,10 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
 
   cfg_new <- src_migrate_cfg(cfg$raw)
   dat_new <- lapply(nms, src_migrate_src, cfg, strict)
+
+  if (dry_run) {
+    return(invisible(path))
+  }
 
   if (!delete_yml) {
     fs::file_copy(file.path(path, "orderly_config.yml"),

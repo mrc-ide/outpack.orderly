@@ -201,3 +201,19 @@ test_that("can migrate queries", {
     src_migrate_query("latest(parameter:a == b && a == c)", c("a", "b")),
     "latest(parameter:a == this:b && this:a == c)")
 })
+
+
+test_that("can run in dry run mode", {
+  list_all <- function(path) {
+    dir(path, recursive = TRUE, all.files = TRUE, no.. = TRUE,
+        include.dirs = FALSE)
+  }
+
+  path <- orderly_demo_src()
+  files <- list_all(path)
+  hash <- tools::md5sum(file.path(path, files))
+  orderly2outpack_src(path, dry_run = TRUE)
+
+  expect_equal(list_all(path), files)
+  expect_equal(tools::md5sum(file.path(path, files)), hash)
+})

@@ -4,7 +4,7 @@
 \alias{orderly2outpack_src}
 \title{Migrate orderly source}
 \usage{
-orderly2outpack_src(path, delete_yml = FALSE, strict = FALSE)
+orderly2outpack_src(path, delete_yml = FALSE, strict = FALSE, dry_run = FALSE)
 }
 \arguments{
 \item{path}{Path to the orderly source directory}
@@ -16,6 +16,9 @@ should be deleted.}
 \code{\link[orderly2:orderly_strict_mode]{orderly2::orderly_strict_mode()}} in the resulting source
 files. You can always add this later to specific cases (or
 remove it).}
+
+\item{dry_run}{Logical, indicating if we should just run process
+all the data, but not write any changes.}
 }
 \value{
 Nothing, called for side effects only
