@@ -174,3 +174,16 @@ test_that("can migrate parameters", {
       list(parameters = list(a = list(default = 1), b = list(default = "x")))),
     'orderly2::orderly_parameters(a = 1, b = "x")')
 })
+
+
+test_that("can migrate queries", {
+  expect_equal(
+    src_migrate_query("latest(parameter:a == b)", NULL),
+    "latest(parameter:a == b)")
+  expect_equal(
+    src_migrate_query("latest(parameter:a == b)", "b"),
+    "latest(parameter:a == this:b)")
+  expect_equal(
+    src_migrate_query("latest(parameter:a == b && a == c)", c("a", "b")),
+    "latest(parameter:a == this:b && this:a == c)")
+})

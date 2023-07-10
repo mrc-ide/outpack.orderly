@@ -182,10 +182,12 @@ src_migrate_depends <- function(cfg, dat) {
     return(NULL)
   }
 
+  parameters <- names(dat$parameters)
+
   ret <- character()
   for (el in split(dat$depends, dat$depends$index)) {
     name <- el$name[[1]]
-    query <- el$id[[1]]
+    query <- src_migrate_query(el$id[[1]], parameters)
     there <- el$filename
     here <- el$as
     use <- sprintf("%s = %s", dquote_if_required(here), dquote(there))
@@ -295,6 +297,27 @@ src_migrate_db_connection <- function(cfg, dat) {
     ret <- c(ret, sprintf(fmt, args_str))
   }
   ret
+}
+
+
+src_migrate_query <- function(query, parameters) {
+  rewrite <- function(expr) {
+    if (is.recursive(expr)) {
+      if (!identical(expr[[1]], as.name(":"))) {
+        expr[-1] <- lapply(expr[-1], rewrite)
+      }
+      expr
+    } else if (is.symbol(expr) && deparse(expr) %in% parameters) {
+      call(":", quote(this), expr)
+    } else {
+      expr
+    }
+  }
+  if (length(parameters) == 0 || !grepl("\\(.+\\)", query)) {
+    return(query)
+  }
+  expr <- parse(text = query)[[1]]
+  deparse(rewrite(expr))
 }
 
 
