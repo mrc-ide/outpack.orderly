@@ -32,13 +32,13 @@ orderly2outpack <- function(src, dest, link = FALSE) {
     if (!identical(existing, ".outpack")) {
       stop("Destination directory is not a bare outpack destination")
     }
-    root_outpack <- outpack::outpack_root_open(dest, FALSE)
+    root_outpack <- orderly2::outpack_root_open(dest, FALSE)
   } else {
-    root_outpack <- outpack::outpack_init(dest,
-                                          logging_console = FALSE,
-                                          path_archive = NULL,
-                                          use_file_store = TRUE,
-                                          require_complete_tree = TRUE)
+    root_outpack <- orderly2::outpack_init(dest,
+                                           logging_console = FALSE,
+                                           path_archive = NULL,
+                                           use_file_store = TRUE,
+                                           require_complete_tree = TRUE)
   }
   hash_algorithm <- root_outpack$config$core$hash_algorithm
 
@@ -71,7 +71,7 @@ orderly2outpack <- function(src, dest, link = FALSE) {
   for (x in res) {
     message(sprintf("%s/%s", x$name, x$id))
     p <- file.path(src, "archive", x$name, x$id)
-    outpack:::outpack_insert_packet(p, x$json, root_outpack)
+    orderly2:::outpack_insert_packet(p, x$json, root_outpack)
   }
 
   dest
@@ -96,7 +96,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   stopifnot(length(hash_expected) == length(files),
             length(files) > 0)
 
-  hash_found <- withr::with_dir(path, outpack:::hash_files(files, "md5"))
+  hash_found <- withr::with_dir(path, orderly2:::hash_files(files, "md5"))
   hash_err <- hash_expected != hash_found
   if (any(hash_err)) {
     message(paste0(sprintf("Some hashes do not agree for %s/%s:\n", name, id),
@@ -131,7 +131,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
 
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
-  session <- outpack:::outpack_session_info(data$session_info)
+  session <- orderly2:::outpack_session_info(data$session_info)
 
   f_artefacts <- function(x, outputs) {
     list(description = jsonlite::unbox(x$description),
@@ -183,14 +183,14 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     orderly, pretty = FALSE, auto_unbox = FALSE,
     json_verbatim = TRUE, na = "null", null = "null")
 
-  outpack:::custom_schema(schema)$validate(orderly_json, error = TRUE)
+  orderly2:::custom_schema(schema)$validate(orderly_json, error = TRUE)
   custom <- list(list(application = "orderly",
                       data = orderly_json))
 
   oo <- options(outpack.schema_validate = TRUE)
   on.exit(options(oo))
 
-  json <- outpack:::outpack_metadata_create(
+  json <- orderly2:::outpack_metadata_create(
     path = path, name = name, id = id, time = time, files = files,
     depends = depends, parameters = parameters, script = script,
     custom = custom, session = session,

@@ -4,7 +4,7 @@ test_that("can migrate demo", {
   expect_true(file.exists(dst))
   expect_equal(dir(dst, all.files = TRUE, no.. = TRUE), ".outpack")
   expect_true(file.exists(file.path(dst, ".outpack")))
-  root <- outpack::outpack_root_open(dst)
+  root <- orderly2::outpack_root_open(dst)
   idx <- root$index()
 
   contents <- orderly1::orderly_list_archive(src)
@@ -42,7 +42,7 @@ test_that("notify migrations if files have been modified, but continue", {
     all = FALSE)
   expect_true(file.exists(res$result))
 
-  root <- outpack::outpack_root_open(res$result)
+  root <- orderly2::outpack_root_open(res$result)
   expect_setequal(names(root$index()$metadata), contents$id)
 })
 
@@ -93,8 +93,8 @@ test_that("test weird special cases", {
   res <- suppressMessages(orderly2outpack(src, tempfile()))
 
   ## Check everything is the same
-  root_cmp <- outpack::outpack_root_open(cmp)
-  root_res <- outpack::outpack_root_open(res)
+  root_cmp <- orderly2::outpack_root_open(cmp)
+  root_res <- orderly2::outpack_root_open(res)
 
   expect_identical(root_cmp$metadata(id1, full = TRUE),
                    root_res$metadata(id1, full = TRUE))
@@ -123,7 +123,7 @@ test_that("can update archive", {
     orderly1::orderly_run("minimal", root = src, echo = FALSE))
   suppressMessages(orderly1::orderly_commit(id, root = src))
 
-  root <- outpack::outpack_root_open(dst, locate = FALSE)
+  root <- orderly2::outpack_root_open(dst, locate = FALSE)
 
   expect_false(id %in% names(root$index(TRUE)$metadata))
 

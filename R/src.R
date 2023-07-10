@@ -55,7 +55,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
     file.remove(file.path(path, "src", nms, "orderly.yml"))
   }
 
-  outpack::outpack_init(path, logging_console = FALSE)
+  orderly2::outpack_init(path, logging_console = FALSE)
 
   invisible(path)
 }

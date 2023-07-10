@@ -20,7 +20,6 @@ Imports:
     orderly1 (>= 1.7.0),
     orderly2 (>= 1.99.0),
     orderly.db,
-    outpack (>= 0.4.0),
     withr
 Suggests:
     markdown,
@@ -30,7 +29,6 @@ Suggests:
 Config/testthat/edition: 3
 Remotes:
     ropensci/jsonvalidate,
-    mrc-ide/outpack,
     mrc-ide/orderly2,
     mrc-ide/orderly.db,
     orderly=vimc/orderly@vimc-7135
