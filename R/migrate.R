@@ -42,13 +42,13 @@ orderly2outpack <- function(src, dest, link = FALSE) {
   }
   hash_algorithm <- root_outpack$config$core$hash_algorithm
 
-  cfg_orderly <- orderly::orderly_config(src)
+  cfg_orderly <- orderly1::orderly_config(src)
   src <- cfg_orderly$root
   message("Checking we can migrate this orderly archive")
   check_complete_tree(src)
 
   known <- root_outpack$index()$unpacked
-  contents <- orderly::orderly_list_archive(src)
+  contents <- orderly1::orderly_list_archive(src)
   contents <- contents[!(contents$id %in% known), ]
   contents <- file.path(src, "archive", contents$name, contents$id)
 
@@ -205,7 +205,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
 
 ## Try to fail fast if we don't have a complete archive
 check_complete_tree <- function(path) {
-  contents <- orderly::orderly_list_archive(path)
+  contents <- orderly1::orderly_list_archive(path)
   p <- file.path(path, "archive", contents$name, contents$id, "orderly_run.rds")
   d <- lapply(p, readRDS)
   used <- lapply(d, function(el) unique(el$meta$depends$id))

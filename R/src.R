@@ -18,10 +18,10 @@
 ##' @return Nothing, called for side effects only
 ##' @export
 orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
-  cfg <- orderly::orderly_config(path)
+  cfg <- orderly1::orderly_config(path)
   path <- cfg$root
 
-  nms <- orderly::orderly_list(path)
+  nms <- orderly1::orderly_list(path)
 
   i <- file.exists(file.path(path, "src", nms, "orderly.R"))
   if (any(i)) {
@@ -42,7 +42,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE) {
     fs::file_copy(file.path(path, "orderly_config.yml"),
                   file.path(path, "orderly_config.yml.orig"))
   }
-  orderly:::yaml_write(cfg_new, file.path(path, "orderly_config.yml"))
+  orderly1:::yaml_write(cfg_new, file.path(path, "orderly_config.yml"))
 
   for (i in seq_along(nms)) {
     writeLines(dat_new[[i]]$code,
@@ -113,7 +113,7 @@ src_migrate_src <- function(name, cfg, strict) {
     src_migrate_sources,
     src_migrate_script)
 
-  dat <- orderly:::orderly_recipe$new(name, cfg, TRUE)
+  dat <- orderly1:::orderly_recipe$new(name, cfg, TRUE)
   code <- if (strict) "orderly2::orderly_strict_mode()" else character(0)
   for (f in migrate) {
     code <- add_section(code, f(cfg, dat))
@@ -234,7 +234,7 @@ src_migrate_sources <- function(cfg, dat) {
 
 src_migrate_script <- function(cfg, dat) {
   code <- readLines(file.path(cfg$root, "src", dat$name, dat$script))
-  code <- sub("orderly::orderly_run_info", "orderly2::orderly_run_info",
+  code <- sub("orderly1?::orderly_run_info", "orderly2::orderly_run_info",
               code, fixed = TRUE)
   code
 }

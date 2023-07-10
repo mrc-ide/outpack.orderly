@@ -1,7 +1,7 @@
 orderly_demo_archive_path <- tempfile(fileext = ".zip")
 orderly_demo_archive <- function() {
   if (!file.exists(orderly_demo_archive_path)) {
-    src <- orderly::orderly_example("demo", run_demo = TRUE, quiet = TRUE)
+    src <- orderly1::orderly_example("demo", run_demo = TRUE, quiet = TRUE)
     on.exit(unlink(src, recursive = TRUE))
     zip::zip(orderly_demo_archive_path, dir(src), root = src)
   }
@@ -14,12 +14,12 @@ orderly_demo_archive <- function() {
 orderly_demo_src_path <- tempfile(fileext = ".zip")
 orderly_demo_src <- function() {
   if (!file.exists(orderly_demo_src_path)) {
-    path <- orderly::orderly_example("demo")
+    path <- orderly1::orderly_example("demo")
     file.create(file.path(path, "src", "spaces", "a resource with spaces.csv"))
 
     path_before <- file.path(path, "before.R")
     before <- sub(
-      'orderly::orderly_db("source")',
+      'orderly1::orderly_db("source")',
       'list(source = DBI::dbConnect(RSQLite::SQLite(), "source.sqlite"))',
       readLines(path_before),
       fixed = TRUE)

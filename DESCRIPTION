@@ -17,7 +17,7 @@ Imports:
     fs,
     jsonlite,
     jsonvalidate,
-    orderly,
+    orderly1 (>= 1.7.0),
     orderly2 (>= 1.99.0),
     orderly.db,
     outpack (>= 0.4.0),
@@ -33,4 +33,4 @@ Remotes:
     mrc-ide/outpack,
     mrc-ide/orderly2,
     mrc-ide/orderly.db,
-    vimc/orderly
+    orderly=vimc/orderly@vimc-7135

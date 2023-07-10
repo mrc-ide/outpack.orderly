@@ -2,7 +2,7 @@ test_that("Can migrate orderly demo directory", {
   path <- orderly_demo_src()
   orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE)
 
-  dat <- orderly:::read_demo_yml(path)
+  dat <- orderly1:::read_demo_yml(path)
   for (i in seq_along(dat)) {
     x <- dat[[i]]
     if (!is.null(x$before)) {
@@ -39,7 +39,7 @@ test_that("can preserve original files after migration", {
   path2 <- orderly_demo_src()
 
   ## Files we'll keep
-  nms <- orderly::orderly_list(path1)
+  nms <- orderly1::orderly_list(path1)
   keep <- c("orderly_config.yml",
             file.path("src", nms, "orderly.yml"),
             file.path("src", nms, "script.R"))
@@ -62,7 +62,7 @@ test_that("can preserve original files after migration", {
 
 test_that("can add strict mode", {
   path <- orderly_demo_src()
-  nms <- orderly::orderly_list(path)
+  nms <- orderly1::orderly_list(path)
   orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE)
   str <- vapply(file.path(path, "src", nms, "orderly.R"),
                 function(p) readLines(p, n = 1), "",
@@ -73,7 +73,7 @@ test_that("can add strict mode", {
 
 test_that("can not add strict mode", {
   path <- orderly_demo_src()
-  nms <- orderly::orderly_list(path)
+  nms <- orderly1::orderly_list(path)
   orderly2outpack_src(path, delete_yml = TRUE, strict = FALSE)
   str <- "orderly2::orderly_strict_mode()"
   expect_false(

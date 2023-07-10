@@ -7,7 +7,7 @@ test_that("can migrate demo", {
   root <- outpack::outpack_root_open(dst)
   idx <- root$index()
 
-  contents <- orderly::orderly_list_archive(src)
+  contents <- orderly1::orderly_list_archive(src)
   expect_setequal(names(idx$metadata), contents$id)
 })
 
@@ -28,7 +28,7 @@ test_that("migration destination must not have non-outpack files in", {
 
 test_that("notify migrations if files have been modified, but continue", {
   src <- orderly_demo_archive()
-  contents <- orderly::orderly_list_archive(src)
+  contents <- orderly1::orderly_list_archive(src)
   name <- "use_resource"
   id <- contents$id[contents$name == name][[1]]
   path <- file.path(src, "archive", name, id, "meta", "data.csv")
@@ -54,14 +54,14 @@ test_that("refuse to migrate incomplete graph", {
   dir.create(file.path(src2, "global"))
   file.copy(file.path(src1, "orderly_config.yml"),
             file.path(src2, "orderly_config.yml"))
-  r <- orderly::orderly_remote_path(src1)
-  contents <- orderly::orderly_list_archive(src1)
+  r <- orderly1::orderly_remote_path(src1)
+  contents <- orderly1::orderly_list_archive(src1)
   name <- "use_dependency"
   id <- contents$id[contents$name == name]
   for (i in id) {
-    suppressMessages(orderly::orderly_pull_archive(name, i, root = src2,
-                                                   remote = r,
-                                                   recursive = FALSE))
+    suppressMessages(orderly1::orderly_pull_archive(name, i, root = src2,
+                                                    remote = r,
+                                                    recursive = FALSE))
   }
   expect_error(check_complete_tree(src2),
                "orderly graph is incomplete")
@@ -73,7 +73,7 @@ test_that("refuse to migrate incomplete graph", {
 test_that("test weird special cases", {
   src <- orderly_demo_archive()
   cmp <- suppressMessages(orderly2outpack(src, tempfile()))
-  contents <- orderly::orderly_list_archive(src)
+  contents <- orderly1::orderly_list_archive(src)
 
   ## 1: missing dependency index
   id1 <- contents$id[contents$name == "use_dependency"][[1]]
@@ -120,8 +120,8 @@ test_that("can update archive", {
   dst <- suppressMessages(orderly2outpack(src, tempfile(), link = TRUE))
 
   id <- suppressMessages(
-    orderly::orderly_run("minimal", root = src, echo = FALSE))
-  suppressMessages(orderly::orderly_commit(id, root = src))
+    orderly1::orderly_run("minimal", root = src, echo = FALSE))
+  suppressMessages(orderly1::orderly_commit(id, root = src))
 
   root <- outpack::outpack_root_open(dst, locate = FALSE)
 
