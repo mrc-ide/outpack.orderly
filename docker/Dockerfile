@@ -17,7 +17,7 @@ COPY LICENSE /orderly2outpack
 COPY orderly2outpack.R /orderly2outpack
 
 RUN R -e "install.packages('remotes')" && \
-    R -e "remotes::install_local('/orderly2outpack', dependencies=T)"
+    R -e "remotes::install_local('/orderly2outpack', dependencies=TRUE)"
 
 COPY docker/schedule.yml /orderly2outpack
 COPY docker/entrypoint /orderly2outpack
