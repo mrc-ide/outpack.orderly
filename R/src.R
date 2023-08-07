@@ -127,6 +127,7 @@ src_migrate_src <- function(name, cfg, strict) {
   for (f in migrate) {
     code <- add_section(code, f(cfg, dat))
   }
+  src_migrate_validate(name, code)
   list(code = code, script = dat$script)
 }
 
@@ -201,12 +202,12 @@ src_migrate_depends <- function(cfg, dat) {
     here <- el$as
     use <- sprintf("%s = %s", dquote_if_required(here), dquote(there))
     if (length(there) == 1) {
-      str <- sprintf('orderly2::orderly_dependency("%s", "%s", c(%s))',
-                     name, query, use)
+      str <- sprintf('orderly2::orderly_dependency("%s", %s, c(%s))',
+                     name, strquote(query), use)
     } else {
       str <- sprintf(
-        'orderly2::orderly_dependency(\n  "%s",\n  "%s",\n  c(%s))',
-        name, query, paste(use, collapse = ",\n    "))
+        'orderly2::orderly_dependency(\n  "%s",\n  %s,\n  c(%s))',
+        name, strquote(query), paste(use, collapse = ",\n    "))
     }
     ret <- c(ret, str)
   }
@@ -325,8 +326,8 @@ src_migrate_query <- function(query, parameters) {
   if (length(parameters) == 0 || !grepl("\\(.+\\)", query)) {
     return(query)
   }
-  expr <- parse(text = query)[[1]]
-  deparse(rewrite(expr))
+  expr <- rewrite(parse(text = query)[[1]])
+  base::deparse1(expr)
 }
 
 
@@ -338,4 +339,12 @@ add_section <- function(curr, new) {
   } else {
     c(curr, "", new)
   }
+}
+
+
+src_migrate_validate <- function(name, code) {
+  tryCatch(parse(text = code), error = function(e) {
+    stop(sprintf("Generated invalid code for '%s':\n%s", name, e$message),
+         call. = FALSE)
+  })
 }
