@@ -25,6 +25,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
   cfg <- orderly1::orderly_config(path)
   path <- cfg$root
 
+  global_path <- cfg$global_resources
   nms <- orderly1::orderly_list(path)
 
   i <- file.exists(file.path(path, "src", nms, "orderly.R"))
@@ -63,7 +64,10 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
     file.remove(file.path(path, "src", nms, "orderly.yml"))
   }
 
-  ## TODO: this should not actually be run!
+  if (!is.null(global_path)) {
+    fs::file_move(file.path(path, global_path), file.path(path, "shared"))
+  }
+
   orderly2::orderly_init(path, logging_console = FALSE)
 
   invisible(path)
@@ -83,10 +87,6 @@ src_migrate_cfg <- function(cfg) {
   ## should direct the user to do that, but we might be able to do
   ## something on that by the time we use this for real.
   ret <- list(minimum_orderly_version = "1.99.0")
-  if (!is.null(cfg$global_resources)) {
-    ret$global_resources <- cfg$global_resources
-  }
-
   if (!is.null(cfg$database)) {
     ret$plugins <- list("orderly.db" = cfg$database)
   }
@@ -132,14 +132,13 @@ src_migrate_src <- function(name, cfg, strict) {
 
 
 src_migrate_description <- function(cfg, dat) {
-  if (is.null(dat$displayname) && is.null(dat$description) &&
-      is.null(dat$custom)) {
-    return(NULL)
-  }
   args <- list(display = dat$displayname,
                long = dat$description,
-               custom = dat$fields)
-  args <- args[!vapply(args, is.null, TRUE)]
+               custom = dat$fields[!vlapply(dat$fields, is_blank)])
+  args <- args[lengths(args) > 0 & !vlapply(args, is_blank)]
+  if (length(args) == 0) {
+    return(NULL)
+  }
   args_str <- paste(sprintf("\n  %s = %s", names(args),
                             vapply(args, deparse1, "", width.cutoff = 500)),
                     collapse = ",")
@@ -165,7 +164,7 @@ src_migrate_global_resources <- function(cfg, dat) {
   if (is.null(dat$global_resources)) {
     return(NULL)
   }
-  fmt <- "orderly2::orderly_global_resource(%s)"
+  fmt <- "orderly2::orderly_shared_resource(%s)"
   args <- sprintf('%s = "%s"',
                   dquote_if_required(names(dat$global_resources)),
                   unname(dat$global_resources))

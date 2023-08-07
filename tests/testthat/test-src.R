@@ -152,12 +152,12 @@ test_that("can migrate global resources", {
     src_migrate_global_resources(
       list(),
       list(global_resources = c(a.csv = "b.csv"))),
-    'orderly2::orderly_global_resource(a.csv = "b.csv")')
+    'orderly2::orderly_shared_resource(a.csv = "b.csv")')
   expect_equal(
     src_migrate_global_resources(
       list(),
       list(global_resources = c("path/a.csv" = "b.csv"))),
-    'orderly2::orderly_global_resource("path/a.csv" = "b.csv")')
+    'orderly2::orderly_shared_resource("path/a.csv" = "b.csv")')
 })
 
 

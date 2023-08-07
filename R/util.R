@@ -40,3 +40,13 @@ read_lines <- function(...) {
 vcapply <- function(...) {
   vapply(..., FUN.VALUE = "")
 }
+
+
+vlapply <- function(...) {
+  vapply(..., FUN.VALUE = TRUE)
+}
+
+
+is_blank <- function(x) {
+  is.null(x) || (length(x) == 1 && is.na(x))
+}
