@@ -28,26 +28,24 @@
 ##' @export
 orderly2outpack <- function(src, dest, link = FALSE) {
   existing <- dir(dest, all.files = TRUE, no.. = TRUE)
-  if (length(existing) > 0) {
-    if (!identical(existing, ".outpack")) {
-      stop("Destination directory is not a bare outpack destination")
-    }
-    root_outpack <- orderly2::outpack_root_open(dest, FALSE)
-  } else {
-    root_outpack <- orderly2::outpack_init(dest,
-                                           logging_console = FALSE,
-                                           path_archive = NULL,
-                                           use_file_store = TRUE,
-                                           require_complete_tree = TRUE)
+  err <- setdiff(existing, c(".outpack", "orderly_config.yml"))
+  if (length(err) > 0) {
+    stop("Destination directory is not a bare outpack destination")
   }
-  hash_algorithm <- root_outpack$config$core$hash_algorithm
+  orderly2::orderly_init(dest,
+                         logging_console = FALSE,
+                         path_archive = NULL,
+                         use_file_store = TRUE,
+                         require_complete_tree = TRUE)
+  hash_algorithm <- orderly2::orderly_config(dest)$core$hash_algorithm
 
   cfg_orderly <- orderly1::orderly_config(src)
   src <- cfg_orderly$root
   message("Checking we can migrate this orderly archive")
   check_complete_tree(src)
 
-  known <- root_outpack$index()$unpacked
+  known <- orderly2::orderly_search(NULL, options = list(location = "local"),
+                                    root = dest)
   contents <- orderly1::orderly_list_archive(src)
   contents <- contents[!(contents$id %in% known), ]
   contents <- file.path(src, "archive", contents$name, contents$id)
@@ -62,16 +60,18 @@ orderly2outpack <- function(src, dest, link = FALSE) {
 
   res <- res[order(vapply(res, "[[", "", "id"))]
 
+  root <- orderly2:::root_open(dest, FALSE)
+
   if (link) {
     message("Linking files, rather than copying them, into the file store")
-    root_outpack$files <- file_store_link$new(root_outpack$files$path)
+    root$files <- file_store_link$new(root$files$path)
   }
 
   message("Importing packets")
   for (x in res) {
     message(sprintf("%s/%s", x$name, x$id))
     p <- file.path(src, "archive", x$name, x$id)
-    orderly2:::outpack_insert_packet(p, x$json, root_outpack)
+    orderly2:::outpack_insert_packet(p, x$json, root)
   }
 
   dest
@@ -131,7 +131,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
 
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
-  session <- orderly2:::outpack_session_info(data$session_info)
+  session <- orderly2:::orderly_session_info(data$session_info)
 
   f_artefacts <- function(x, outputs) {
     list(description = jsonlite::unbox(x$description),
@@ -142,9 +142,9 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   })
 
   if (length(data$meta$global_resources) == 0) {
-    global <- list()
+    shared <- list()
   } else {
-    global <- Map(function(here, there) {
+    shared <- Map(function(here, there) {
       list(here = jsonlite::unbox(here),
            there = jsonlite::unbox(there))
     }, names(data$meta$global_resources), unname(data$meta$global_resources),
@@ -156,44 +156,34 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
              data$meta$depends$as),
     role = c(data$meta$file_info_inputs$file_purpose,
              rep("dependency", NROW(data$meta$depends))))
-
-  ## TODO: this can be updated now, and should be where db bits are
-  ## present; we can detect this from the root configuration really.
-
-  ## NOTE: assuming empty custom metadata, seems fair at first. This
-  ## is only used to access plugins, and later we might want to
-  ## support this properly for VIMC db migrations?
-  schema <- orderly2:::custom_metadata_schema(list())
+  role$role[role$role %in% c("orderly_yml", "script", "readme", "source")] <-
+    "resource"
+  role$role[role$role == "global"] <- "shared"
 
   custom <- data$meta$extra_fields
   if (!is.null(custom)) {
     custom <- lapply(custom, scalar)
   }
 
-  orderly <- list(
-    "artefacts" = artefacts,
-    "packages" = data$meta$packages %||% character(0),
-    "global" = global,
-    "role" = role,
-    "description" = list(
-      "display" = scalar(data$meta$displayname),
-      "long" = scalar(data$meta$description),
-      "custom" = custom))
-  orderly_json <- jsonlite::toJSON(
-    orderly, pretty = FALSE, auto_unbox = FALSE,
-    json_verbatim = TRUE, na = "null", null = "null")
-
-  orderly2:::custom_schema(schema)$validate(orderly_json, error = TRUE)
-  custom <- list(list(application = "orderly",
-                      data = orderly_json))
-
   oo <- options(outpack.schema_validate = TRUE)
   on.exit(options(oo))
 
+  ## TODO: also get the orderly.db bits added here.
+  orderly <- list(
+    artefacts = artefacts,
+    shared = shared,
+    role = role,
+    description = list(
+      display = scalar(data$meta$displayname),
+      long = scalar(data$meta$description),
+      custom = custom),
+    session = session)
+  orderly_json <- orderly2:::to_json(orderly, "orderly/orderly.json")
+
+  custom <- list(list(application = "orderly", data = orderly_json))
   json <- orderly2:::outpack_metadata_create(
     path = path, name = name, id = id, time = time, files = files,
-    depends = depends, parameters = parameters, script = script,
-    custom = custom, session = session,
+    depends = depends, parameters = parameters, custom = custom,
     file_ignore = NULL, file_hash = NULL,
     hash_algorithm = hash_algorithm)
 

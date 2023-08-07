@@ -2,13 +2,13 @@ test_that("can migrate demo", {
   src <- orderly_demo_archive()
   msg <- testthat::capture_messages(dst <- orderly2outpack(src, tempfile()))
   expect_true(file.exists(dst))
-  expect_equal(dir(dst, all.files = TRUE, no.. = TRUE), ".outpack")
+  expect_equal(dir(dst, all.files = TRUE, no.. = TRUE),
+               c(".outpack", "orderly_config.yml"))
   expect_true(file.exists(file.path(dst, ".outpack")))
-  root <- orderly2::outpack_root_open(dst)
-  idx <- root$index()
 
-  contents <- orderly1::orderly_list_archive(src)
-  expect_setequal(names(idx$metadata), contents$id)
+  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
+                                  root = dst)
+  expect_setequal(ids, orderly1::orderly_list_archive(src)$id)
 })
 
 
@@ -34,16 +34,18 @@ test_that("notify migrations if files have been modified, but continue", {
   path <- file.path(src, "archive", name, id, "meta", "data.csv")
   txt <- readLines(path)
   writeLines(txt[-length(txt)], path)
+  dst <- tempfile()
   res <- testthat::evaluate_promise(
-    orderly2outpack(src, tempfile()))
+    orderly2outpack(src, dst))
   expect_match(
     res$messages,
     "Some hashes do not agree for use_resource/.*meta/data.csv",
     all = FALSE)
   expect_true(file.exists(res$result))
 
-  root <- orderly2::outpack_root_open(res$result)
-  expect_setequal(names(root$index()$metadata), contents$id)
+  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
+                                  root = dst)
+  expect_setequal(ids, contents$id)
 })
 
 
@@ -93,13 +95,10 @@ test_that("test weird special cases", {
   res <- suppressMessages(orderly2outpack(src, tempfile()))
 
   ## Check everything is the same
-  root_cmp <- orderly2::outpack_root_open(cmp)
-  root_res <- orderly2::outpack_root_open(res)
-
-  expect_identical(root_cmp$metadata(id1, full = TRUE),
-                   root_res$metadata(id1, full = TRUE))
-  expect_identical(root_cmp$metadata(id2, full = TRUE),
-                   root_res$metadata(id2, full = TRUE))
+  expect_identical(orderly2::orderly_metadata(id1, cmp),
+                   orderly2::orderly_metadata(id1, res))
+  expect_identical(orderly2::orderly_metadata(id2, cmp),
+                   orderly2::orderly_metadata(id2, res))
 })
 
 
@@ -123,14 +122,15 @@ test_that("can update archive", {
     orderly1::orderly_run("minimal", root = src, echo = FALSE))
   suppressMessages(orderly1::orderly_commit(id, root = src))
 
-  root <- orderly2::outpack_root_open(dst, locate = FALSE)
-
-  expect_false(id %in% names(root$index(TRUE)$metadata))
+  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
+                                  root = dst)
+  expect_false(id %in% ids)
 
   expect_equal(
     suppressMessages(orderly2outpack(src, dst, link = TRUE)),
     dst)
 
-  expect_true(id %in% names(root$index(TRUE)$metadata))
-  expect_true(id %in% root$index(TRUE)$unpacked)
+  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
+                                  root = dst)
+  expect_true(id %in% ids)
 })

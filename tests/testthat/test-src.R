@@ -152,12 +152,12 @@ test_that("can migrate global resources", {
     src_migrate_global_resources(
       list(),
       list(global_resources = c(a.csv = "b.csv"))),
-    'orderly2::orderly_global_resource(a.csv = "b.csv")')
+    'orderly2::orderly_shared_resource(a.csv = "b.csv")')
   expect_equal(
     src_migrate_global_resources(
       list(),
       list(global_resources = c("path/a.csv" = "b.csv"))),
-    'orderly2::orderly_global_resource("path/a.csv" = "b.csv")')
+    'orderly2::orderly_shared_resource("path/a.csv" = "b.csv")')
 })
 
 
@@ -200,6 +200,24 @@ test_that("can migrate queries", {
   expect_equal(
     src_migrate_query("latest(parameter:a == b && a == c)", c("a", "b")),
     "latest(parameter:a == this:b && this:a == c)")
+})
+
+
+test_that("can migrate descriptions", {
+  expect_null(src_migrate_description(NULL, list()))
+  expect_null(src_migrate_description(NULL, list(displayname = NULL)))
+  expect_equal(
+    src_migrate_description(NULL, list(displayname = "a")),
+    'orderly2::orderly_description(\n  display = "a")')
+  expect_equal(
+    src_migrate_description(NULL, list(displayname = "a",
+                                       fields = list(x = 1))),
+    'orderly2::orderly_description(\n  display = "a",\n  custom = list(x = 1))')
+  expect_equal(
+    src_migrate_description(NULL, list(displayname = "a",
+                                       fields = list(x = NA))),
+    'orderly2::orderly_description(\n  display = "a")')
+  expect_null(src_migrate_description(NULL, list(fields = list(x = NA))))
 })
 
 
