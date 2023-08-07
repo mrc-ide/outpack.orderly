@@ -203,6 +203,24 @@ test_that("can migrate queries", {
 })
 
 
+test_that("can migrate descriptions", {
+  expect_null(src_migrate_description(NULL, list()))
+  expect_null(src_migrate_description(NULL, list(displayname = NULL)))
+  expect_equal(
+    src_migrate_description(NULL, list(displayname = "a")),
+    'orderly2::orderly_description(\n  display = "a")')
+  expect_equal(
+    src_migrate_description(NULL, list(displayname = "a",
+                                       fields = list(x = 1))),
+    'orderly2::orderly_description(\n  display = "a",\n  custom = list(x = 1))')
+  expect_equal(
+    src_migrate_description(NULL, list(displayname = "a",
+                                       fields = list(x = NA))),
+    'orderly2::orderly_description(\n  display = "a")')
+  expect_null(src_migrate_description(NULL, list(fields = list(x = NA))))
+})
+
+
 test_that("can run in dry run mode", {
   list_all <- function(path) {
     dir(path, recursive = TRUE, all.files = TRUE, no.. = TRUE,
