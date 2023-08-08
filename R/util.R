@@ -18,12 +18,28 @@ dquote <- function(x) {
 }
 
 
+squote <- function(x) {
+  sprintf("'%s'", x)
+}
+
+
 dquote_if_required <- function(x) {
   i <- grepl("([-+ /]|^[^A-Za-z])", x)
   if (any(i)) {
     x[i] <- dquote(x[i])
   }
   x
+}
+
+
+strquote <- function(x) {
+  if (!grepl('"', x, fixed = TRUE)) {
+    dquote(x)
+  } else if (!grepl("'", x, fixed = TRUE)) {
+    squote(x)
+  } else {
+    stop("Can't quote this")
+  }
 }
 
 

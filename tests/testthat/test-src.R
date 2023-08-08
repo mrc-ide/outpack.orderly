@@ -104,6 +104,28 @@ test_that("can migrate single, simple, dependency", {
 })
 
 
+test_that("can migrate dependency with long string and quotes", {
+  depends <- data.frame(
+    id = paste('latest(parameter:some_name == "some_parameter" &&',
+               'parameter:another == "another" &&',
+               'parameter:a_third == "another one!")'),
+    index = 1,
+    name = "name",
+    draft = NA,
+    filename = "filename.csv",
+    as = "incoming.csv",
+    is_pinned = FALSE)
+  cfg <- list(parameters = c("some_name", "another", "a_third"))
+  res <- src_migrate_depends(list(), list(depends = depends))
+  cmp <- paste('orderly2::orderly_dependency("name",',
+               '\'latest(parameter:some_name == "some_parameter" &&',
+               'parameter:another == "another" &&',
+               'parameter:a_third == "another one!")\',',
+               'c(incoming.csv = "filename.csv"))')
+  expect_equal(res, cmp)
+})
+
+
 test_that("can migrate single, multi-piece, dependency", {
   depends <- data.frame(
     id = "latest(parameter:x = 1)",
@@ -234,4 +256,11 @@ test_that("can run in dry run mode", {
 
   expect_equal(list_all(path), files)
   expect_equal(tools::md5sum(file.path(path, files)), hash)
+})
+
+
+test_that("throw informative error on parse failure", {
+  expect_error(
+    src_migrate_validate("foo", "some error"),
+    "Generated invalid code for 'foo':")
 })
