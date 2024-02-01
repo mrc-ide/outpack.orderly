@@ -164,10 +164,11 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     custom <- lapply(custom, scalar)
   }
 
+  orderly_db <- orderly_db_metadata_to_outpack(path, data)
+
   oo <- options(outpack.schema_validate = TRUE)
   on.exit(options(oo))
 
-  ## TODO: also get the orderly.db bits added here.
   orderly <- list(
     artefacts = artefacts,
     shared = shared,
@@ -180,6 +181,12 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   orderly_json <- orderly2:::to_json(orderly, "orderly/orderly.json")
 
   custom <- list(list(application = "orderly", data = orderly_json))
+  if (!is.null(orderly_db)) {
+    orderly_db_json <- orderly2:::to_json(orderly_db,
+                                          "orderly.db/orderly.db.json")
+    custom$orderly.db <- list(application = "orderly.db",
+                              data = orderly_db_json)
+  }
   json <- orderly2:::outpack_metadata_create(
     path = path, name = name, id = id, time = time, files = files,
     depends = depends, parameters = parameters, custom = custom,
@@ -201,4 +208,49 @@ check_complete_tree <- function(path) {
   if (!all(unlist(used) %in% contents$id)) {
     stop("orderly graph is incomplete")
   }
+}
+
+
+orderly_db_metadata_to_outpack <- function(path, data) {
+  ret <- list()
+  query <- data$meta$data
+  if (!is.null(query)) {
+    path_data <- file.path(dirname(dirname(dirname(path))), "data/rds")
+    ret$query <- lapply(seq_len(nrow(query)), function(i) {
+      d <- readRDS(file.path(path_data, paste0(query$hash[[i]], ".rds")))
+      database <- query$database[[i]]
+      list(database = scalar(database),
+           instance = scalar(data$meta$instance[[database]]),
+           name = scalar(query$name[[i]]),
+           query = scalar(query$query[[i]]),
+           rows = scalar(nrow(d)),
+           cols = names(d))
+    })
+  }
+
+  connection <- data$meta$connection
+  if (isTRUE(connection)) {
+    ## Turns out we never saved this information properly anyway:
+    yml <- orderly1:::yaml_read(file.path(path, "orderly.yml"))
+    config <- orderly1::orderly_config(file.path(path, "../../.."), FALSE)
+    con <- orderly1:::recipe_migrate(yml, config, filename)$connection
+    ret$connection <- lapply(unname(con), function(database) {
+      list(database = scalar(database),
+           instance = scalar(data$meta$instance[[database]]))
+    })
+  }
+
+  view <- data$meta$view
+  if (!is.null(view)) {
+    ret$view <- lapply(seq_len(nrow(view)), function(i) {
+      database <- view$database[[i]]
+      list(database = scalar(database),
+           instance = scalar(data$meta$instance[[database]]),
+           as = scalar(view$name[[i]]),
+           query = scalar(view$query[[i]]))
+
+    })
+  }
+
+  if (length(ret) == 0) NULL else ret
 }
