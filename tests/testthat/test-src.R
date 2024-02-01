@@ -1,6 +1,6 @@
 test_that("Can migrate orderly demo directory", {
   path <- orderly_demo_src()
-  orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE)
+  suppressMessages(orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE))
 
   dat <- orderly1:::read_demo_yml(path)
   for (i in seq_along(dat)) {
@@ -9,8 +9,9 @@ test_that("Can migrate orderly demo directory", {
       withr::with_dir(path, x$before())
     }
     env <- new.env(parent = .GlobalEnv)
-    dat[[i]]$id <- orderly2::orderly_run(x$name, x$parameters, envir = env,
-                                         root = path)
+    expect_no_error(suppressMessages(
+      dat[[i]]$id <- orderly2::orderly_run(x$name, x$parameters, envir = env,
+                                           root = path, echo = FALSE)))
   }
 })
 
@@ -46,8 +47,8 @@ test_that("can preserve original files after migration", {
   kept <- c("orderly_config.yml.orig", keep[-1])
   h1 <- withr::with_dir(path1, tools::md5sum(sub("\\.orig$", "", keep)))
 
-  orderly2outpack_src(path1, delete_yml = TRUE)
-  orderly2outpack_src(path2, delete_yml = FALSE)
+  suppressMessages(orderly2outpack_src(path1, delete_yml = TRUE))
+  suppressMessages(orderly2outpack_src(path2, delete_yml = FALSE))
   files1 <- dir(path1, recursive = TRUE, all.files = TRUE, no.. = TRUE,
                 include.dirs = FALSE)
   files2 <- dir(path2, recursive = TRUE, all.files = TRUE, no.. = TRUE,
@@ -63,7 +64,7 @@ test_that("can preserve original files after migration", {
 test_that("can add strict mode", {
   path <- orderly_demo_src()
   nms <- orderly1::orderly_list(path)
-  orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE)
+  suppressMessages(orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE))
   str <- vapply(file.path(path, "src", nms, "orderly.R"),
                 function(p) readLines(p, n = 1), "",
                 USE.NAMES = FALSE)
@@ -74,7 +75,7 @@ test_that("can add strict mode", {
 test_that("can not add strict mode", {
   path <- orderly_demo_src()
   nms <- orderly1::orderly_list(path)
-  orderly2outpack_src(path, delete_yml = TRUE, strict = FALSE)
+  suppressMessages(orderly2outpack_src(path, delete_yml = TRUE, strict = FALSE))
   str <- "orderly2::orderly_strict_mode()"
   expect_false(
     any(vapply(file.path(path, "src", nms, "orderly.R"),

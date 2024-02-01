@@ -33,7 +33,6 @@ orderly2outpack <- function(src, dest, link = FALSE) {
     stop("Destination directory is not a bare outpack destination")
   }
   orderly2::orderly_init(dest,
-                         logging_console = FALSE,
                          path_archive = NULL,
                          use_file_store = TRUE,
                          require_complete_tree = TRUE)
