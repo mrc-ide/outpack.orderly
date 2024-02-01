@@ -68,7 +68,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
     fs::file_move(file.path(path, global_path), file.path(path, "shared"))
   }
 
-  orderly2::orderly_init(path, logging_console = FALSE)
+  orderly2::orderly_init(path)
 
   invisible(path)
 }
@@ -276,17 +276,17 @@ src_migrate_db_data <- function(cfg, dat) {
   if (is.null(dat$data)) {
     return(NULL)
   }
-  fmt <- "orderly.db::orderly_db_query(\n  %s)"
+  fmt <- "%s <- orderly.db::orderly_db_query(\n  %s)"
   ret <- character(0)
   for (i in names(dat$data)) {
     x <- dat$data[[i]]
-    args <- c(query = x$query, as = i)
+    args <- c(query = x$query)
     if (!is.null(x$database)) {
       args[["database"]] <- x$database
     }
     args_str <- paste(sprintf('%s = "%s"', names(args), unname(args)),
                       collapse = ",\n  ")
-    ret <- c(ret, sprintf(fmt, args_str))
+    ret <- c(ret, sprintf(fmt, i, args_str))
   }
   ret
 }
@@ -298,13 +298,13 @@ src_migrate_db_connection <- function(cfg, dat) {
   }
 
   ret <- character(0)
-  fmt <- "orderly.db::orderly_db_connection(%s)"
+  fmt <- "%s <- orderly.db::orderly_db_connection(%s)"
   for (i in names(dat$connection)) {
     ## TODO: some control parameter here to tune 'instance' or not.
-    args <- c(as = i, database = dat$connection[[i]])
+    args <- c(database = dat$connection[[i]])
     args_str <- paste(sprintf('%s = "%s"', names(args), unname(args)),
                       collapse = ", ")
-    ret <- c(ret, sprintf(fmt, args_str))
+    ret <- c(ret, sprintf(fmt, i, args_str))
   }
   ret
 }
