@@ -147,9 +147,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
 
   custom <- data$meta$extra_fields
   custom <- custom[!vlapply(custom, function(x) is.null(x) || is.na(x))]
-  if (length(custom) == 0) {
-    custom <- NULL
-  } else {
+  if (!is.null(custom)) {
     custom <- lapply(custom, scalar)
   }
 
