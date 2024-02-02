@@ -115,8 +115,15 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     }
     depends <- unname(lapply(
       split(data$meta$depends, data$meta$depends$index), function(x) {
+        if (x$id_requested %in% c("latest", "latest()")) {
+          query <- sprintf('latest(name == "%s")', x$name)
+        } else if (grepl("latest\\(", x$id_requested)) {
+          query <- sub(")$", sprintf(', name == "%s")', x$name), x$id_requested)
+        } else {
+          query <- x$id_requested[[1]]
+        }
         list(packet = x$id[[1]],
-             query = x$id_requested[[1]],
+             query = query,
              files = data_frame(here = x$as,
                                 there = x$filename))
       }))
@@ -160,7 +167,10 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   role$role[role$role == "global"] <- "shared"
 
   custom <- data$meta$extra_fields
-  if (!is.null(custom)) {
+  custom <- custom[!vlapply(custom, function(x) is.null(x) || is.na(x))]
+  if (length(custom) == 0) {
+    custom <- NULL
+  } else {
     custom <- lapply(custom, scalar)
   }
 
@@ -213,6 +223,18 @@ check_complete_tree <- function(path) {
 
 orderly_db_metadata_to_outpack <- function(path, data) {
   ret <- list()
+
+  view <- data$meta$view
+  if (!is.null(view)) {
+    ret$view <- lapply(seq_len(nrow(view)), function(i) {
+      database <- view$database[[i]]
+      list(database = scalar(database),
+           instance = scalar(data$meta$instance[[database]]),
+           as = scalar(view$name[[i]]),
+           query = scalar(view$query[[i]]))
+    })
+  }
+
   query <- data$meta$data
   if (!is.null(query)) {
     path_data <- file.path(dirname(dirname(dirname(path))), "data/rds")
@@ -237,18 +259,6 @@ orderly_db_metadata_to_outpack <- function(path, data) {
     ret$connection <- lapply(unname(con), function(database) {
       list(database = scalar(database),
            instance = scalar(data$meta$instance[[database]]))
-    })
-  }
-
-  view <- data$meta$view
-  if (!is.null(view)) {
-    ret$view <- lapply(seq_len(nrow(view)), function(i) {
-      database <- view$database[[i]]
-      list(database = scalar(database),
-           instance = scalar(data$meta$instance[[database]]),
-           as = scalar(view$name[[i]]),
-           query = scalar(view$query[[i]]))
-
     })
   }
 
