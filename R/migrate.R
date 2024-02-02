@@ -106,34 +106,13 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   found <- dir(path, recursive = TRUE, all.files = TRUE, no.. = TRUE)
   extra <- setdiff(found, c(files, ignore))
 
-  if (is.null(data$meta$depends)) {
-    depends <- NULL
-  } else {
-    ## Seen in rtm_incoming_serology/20200603-204022-70b8bfa5
-    if (is.null(data$meta$depends$index)) {
-      data$meta$depends$index <- as.integer(factor(data$meta$depends$id))
-    }
-    depends <- unname(lapply(
-      split(data$meta$depends, data$meta$depends$index), function(x) {
-        if (x$id_requested %in% c("latest", "latest()")) {
-          query <- sprintf('latest(name == "%s")', x$name)
-        } else if (grepl("latest\\(", x$id_requested)) {
-          query <- sub(")$", sprintf(', name == "%s")', x$name), x$id_requested)
-        } else {
-          query <- x$id_requested[[1]]
-        }
-        list(packet = x$id[[1]],
-             query = query,
-             files = data_frame(here = x$as,
-                                there = x$filename))
-      }))
-  }
-
   parameters <- data$meta$parameters
   if (inherits(parameters, "data.frame")) {
     ## Seen in native-201910-201710-compare-impact/20200603-103158-9a8cb992
     parameters <- as.list(parameters)
   }
+
+  depends <- archive_migrate_depends(data$meta$depends, names(parameters))
 
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
@@ -263,4 +242,29 @@ orderly_db_metadata_to_outpack <- function(path, data) {
   }
 
   if (length(ret) == 0) NULL else ret
+}
+
+
+archive_migrate_depends <- function(depends, parameters) {
+  if (is.null(depends)) {
+    return(NULL)
+  }
+  ## Seen in rtm_incoming_serology/20200603-204022-70b8bfa5
+  if (is.null(depends$index)) {
+    depends$index <- as.integer(factor(depends$id))
+  }
+  unname(lapply(
+    split(depends, depends$index), function(x) {
+      if (x$id_requested %in% c("latest", "latest()")) {
+        query <- sprintf('latest(name == "%s")', x$name)
+      } else if (grepl("latest\\(", x$id_requested)) {
+        str <- sub(")$", sprintf(' && name == "%s")', x$name), x$id_requested)
+        query <- src_migrate_query(str, parameters)
+      } else {
+        query <- x$id_requested[[1]]
+      }
+      list(packet = x$id[[1]],
+           query = query,
+           files = data_frame(here = x$as, there = x$filename))
+    }))
 }

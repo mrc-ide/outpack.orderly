@@ -134,3 +134,52 @@ test_that("can update archive", {
                                   root = dst)
   expect_true(id %in% ids)
 })
+
+
+test_that("dependency migration", {
+  depends <- data.frame(
+    id = "a",
+    index = 1,
+    name = "foo",
+    id_requested = "latest",
+    as = "here.csv",
+    filename = "there.csv")
+  expect_equal(
+    archive_migrate_depends(depends, NULL),
+    list(list(packet = "a",
+              query = 'latest(name == "foo")',
+              files = data_frame(here = "here.csv", there = "there.csv"))))
+})
+
+
+test_that("dependency migration with fixed id", {
+  depends <- data.frame(
+    id = "a",
+    index = 1,
+    name = "foo",
+    id_requested = "20240202-111943-fa53e980",
+    as = "here.csv",
+    filename = "there.csv")
+  expect_equal(
+    archive_migrate_depends(depends, NULL),
+    list(list(packet = "a",
+              query = "20240202-111943-fa53e980",
+              files = data_frame(here = "here.csv", there = "there.csv"))))
+})
+
+
+test_that("dependency migration with fancy query", {
+  depends <- data.frame(
+    id = "a",
+    index = 1,
+    name = "foo",
+    id_requested = "latest(x == parameter:y)",
+    as = "here.csv",
+    filename = "there.csv")
+  parameters <- list(x = 1)
+  expect_equal(
+    archive_migrate_depends(depends, "x"),
+    list(list(packet = "a",
+              query = 'latest(this:x == parameter:y && name == "foo")',
+              files = data_frame(here = "here.csv", there = "there.csv"))))
+})
