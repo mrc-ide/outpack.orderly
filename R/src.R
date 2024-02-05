@@ -280,7 +280,7 @@ src_migrate_db_data <- function(cfg, dat) {
   ret <- character(0)
   for (i in names(dat$data)) {
     x <- dat$data[[i]]
-    args <- c(query = x$query)
+    args <- c(query = x$query, name = i)
     if (!is.null(x$database)) {
       args[["database"]] <- x$database
     }

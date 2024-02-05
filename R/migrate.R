@@ -106,27 +106,13 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   found <- dir(path, recursive = TRUE, all.files = TRUE, no.. = TRUE)
   extra <- setdiff(found, c(files, ignore))
 
-  if (is.null(data$meta$depends)) {
-    depends <- NULL
-  } else {
-    ## Seen in rtm_incoming_serology/20200603-204022-70b8bfa5
-    if (is.null(data$meta$depends$index)) {
-      data$meta$depends$index <- as.integer(factor(data$meta$depends$id))
-    }
-    depends <- unname(lapply(
-      split(data$meta$depends, data$meta$depends$index), function(x) {
-        list(packet = x$id[[1]],
-             query = x$id_requested[[1]],
-             files = data_frame(here = x$as,
-                                there = x$filename))
-      }))
-  }
-
   parameters <- data$meta$parameters
   if (inherits(parameters, "data.frame")) {
     ## Seen in native-201910-201710-compare-impact/20200603-103158-9a8cb992
     parameters <- as.list(parameters)
   }
+
+  depends <- archive_migrate_depends(data$meta$depends, names(parameters))
 
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
@@ -160,14 +146,16 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   role$role[role$role == "global"] <- "shared"
 
   custom <- data$meta$extra_fields
+  custom <- custom[!vlapply(custom, function(x) is.null(x) || is.na(x))]
   if (!is.null(custom)) {
     custom <- lapply(custom, scalar)
   }
 
+  orderly_db <- orderly_db_metadata_to_outpack(path, data)
+
   oo <- options(outpack.schema_validate = TRUE)
   on.exit(options(oo))
 
-  ## TODO: also get the orderly.db bits added here.
   orderly <- list(
     artefacts = artefacts,
     shared = shared,
@@ -180,6 +168,12 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   orderly_json <- orderly2:::to_json(orderly, "orderly/orderly.json")
 
   custom <- list(list(application = "orderly", data = orderly_json))
+  if (!is.null(orderly_db)) {
+    orderly_db_json <- orderly2:::to_json(orderly_db,
+                                          "orderly.db/orderly.db.json")
+    custom$orderly.db <- list(application = "orderly.db",
+                              data = orderly_db_json)
+  }
   json <- orderly2:::outpack_metadata_create(
     path = path, name = name, id = id, time = time, files = files,
     depends = depends, parameters = parameters, custom = custom,
@@ -201,4 +195,74 @@ check_complete_tree <- function(path) {
   if (!all(unlist(used) %in% contents$id)) {
     stop("orderly graph is incomplete")
   }
+}
+
+
+orderly_db_metadata_to_outpack <- function(path, data) {
+  ret <- list()
+
+  view <- data$meta$view
+  if (!is.null(view)) {
+    ret$view <- lapply(seq_len(nrow(view)), function(i) {
+      database <- view$database[[i]]
+      list(database = scalar(database),
+           instance = scalar(data$meta$instance[[database]]),
+           as = scalar(view$name[[i]]),
+           query = scalar(view$query[[i]]))
+    })
+  }
+
+  query <- data$meta$data
+  if (!is.null(query)) {
+    path_data <- file.path(dirname(dirname(dirname(path))), "data/rds")
+    ret$query <- lapply(seq_len(nrow(query)), function(i) {
+      d <- readRDS(file.path(path_data, paste0(query$hash[[i]], ".rds")))
+      database <- query$database[[i]]
+      list(database = scalar(database),
+           instance = scalar(data$meta$instance[[database]]),
+           name = scalar(query$name[[i]]),
+           query = scalar(query$query[[i]]),
+           rows = scalar(nrow(d)),
+           cols = names(d))
+    })
+  }
+
+  connection <- data$meta$connection
+  if (isTRUE(connection)) {
+    ## Turns out we never saved this information properly anyway:
+    yml <- orderly1:::yaml_read(file.path(path, "orderly.yml"))
+    config <- orderly1::orderly_config(file.path(path, "../../.."), FALSE)
+    con <- orderly1:::recipe_migrate(yml, config, filename)$connection
+    ret$connection <- lapply(unname(con), function(database) {
+      list(database = scalar(database),
+           instance = scalar(data$meta$instance[[database]]))
+    })
+  }
+
+  if (length(ret) == 0) NULL else ret
+}
+
+
+archive_migrate_depends <- function(depends, parameters) {
+  if (is.null(depends)) {
+    return(NULL)
+  }
+  ## Seen in rtm_incoming_serology/20200603-204022-70b8bfa5
+  if (is.null(depends$index)) {
+    depends$index <- as.integer(factor(depends$id))
+  }
+  unname(lapply(
+    split(depends, depends$index), function(x) {
+      if (x$id_requested %in% c("latest", "latest()")) {
+        query <- sprintf('latest(name == "%s")', x$name)
+      } else if (grepl("latest\\(", x$id_requested)) {
+        str <- sub(")$", sprintf(' && name == "%s")', x$name), x$id_requested)
+        query <- src_migrate_query(str, parameters)
+      } else {
+        query <- x$id_requested[[1]]
+      }
+      list(packet = x$id[[1]],
+           query = query,
+           files = data_frame(here = x$as, there = x$filename))
+    }))
 }
