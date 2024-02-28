@@ -212,8 +212,8 @@ test_that("can migrate when archive has more than 1 dependency from 1 report", {
   writeLines(multi_dependency_script, file.path(multi_dependency, "script.R"))
   yaml::write_yaml(multi_dependency_yml,
                    file.path(multi_dependency, "orderly.yml"))
-  x <- orderly::orderly_run("multi-dependency", root = src)
-  orderly::orderly_commit(x, root = src)
+  x <- orderly1::orderly_run("multi-dependency", root = src)
+  orderly1::orderly_commit(x, root = src)
 
   msg <- testthat::capture_messages(dst <- orderly2outpack(src, tempfile()))
   expect_true(file.exists(dst))
