@@ -20,7 +20,8 @@ Imports:
     orderly1 (>= 1.7.0),
     orderly2 (>= 1.99.2),
     orderly.db (>= 0.1.2),
-    withr
+    withr,
+    yaml
 Suggests:
     markdown,
     rmarkdown,
