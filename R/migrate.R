@@ -249,14 +249,14 @@ archive_migrate_depends <- function(depends, parameters) {
   }
   ## Seen in rtm_incoming_serology/20200603-204022-70b8bfa5
   if (is.null(depends$index)) {
-    depends$index <- as.integer(factor(depends$id))
+    depends$index <- as.integer(factor(paste0(depends$id, depends$id_requested)))
   }
   unname(lapply(
     split(depends, depends$index), function(x) {
-      if (x$id_requested %in% c("latest", "latest()")) {
-        query <- sprintf('latest(name == "%s")', x$name)
-      } else if (grepl("latest\\(", x$id_requested)) {
-        str <- sub(")$", sprintf(' && name == "%s")', x$name), x$id_requested)
+      if (x$id_requested[[1]] %in% c("latest", "latest()")) {
+        query <- sprintf('latest(name == "%s")', x$name[[1]])
+      } else if (grepl("latest\\(", x$id_requested[[1]])) {
+        str <- sub(")$", sprintf(' && name == "%s")', x$name[[1]]), x$id_requested[[1]])
         query <- src_migrate_query(str, parameters)
       } else {
         query <- x$id_requested[[1]]

@@ -183,3 +183,45 @@ test_that("dependency migration with fancy query", {
               query = 'latest(this:x == parameter:y && name == "foo")',
               files = data_frame(here = "here.csv", there = "there.csv"))))
 })
+
+
+test_that("can migrate when archive has more than 1 dependency from 1 report", {
+  src <- orderly_demo_archive()
+  multi_dependency_yml <- list(script = "script.R",
+                               depends = list(
+                                 "multi-artefact" = list(
+                                   id = "latest",
+                                   use = list("all.csv" = "all.csv",
+                                              "subset.csv" = "subset.csv")
+                                 )
+                               ),
+                               artefacts = list(list(
+                                 data = list(
+                                   description = "some data",
+                                   filenames = "rows.rds"
+                                 )
+                               )),
+                               requester = "Joe Bloggs",
+                               author = "Joe Bloggs")
+  multi_dependency_script <- c("x <- read.csv('all.csv')",
+                               "y <- read.csv('subset.csv')",
+                               "z <- nrow(x) + nrow(y)",
+                               "saveRDS(z, 'rows.rds')")
+  multi_dependency <- file.path(src, "src", "multi-dependency")
+  dir.create(multi_dependency)
+  writeLines(multi_dependency_script, file.path(multi_dependency, "script.R"))
+  yaml::write_yaml(multi_dependency_yml,
+                   file.path(multi_dependency, "orderly.yml"))
+  x <- orderly1::orderly_run("multi-dependency", root = src)
+  orderly1::orderly_commit(x, root = src)
+
+  msg <- testthat::capture_messages(dst <- orderly2outpack(src, tempfile()))
+  expect_true(file.exists(dst))
+  expect_equal(dir(dst, all.files = TRUE, no.. = TRUE),
+               c(".outpack", "orderly_config.yml"))
+  expect_true(file.exists(file.path(dst, ".outpack")))
+
+  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
+                                  root = dst)
+  expect_setequal(ids, orderly1::orderly_list_archive(src)$id)
+})
