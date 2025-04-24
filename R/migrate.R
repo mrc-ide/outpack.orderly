@@ -229,9 +229,10 @@ orderly_db_metadata_to_outpack <- function(path, data) {
   connection <- data$meta$connection
   if (isTRUE(connection)) {
     ## Turns out we never saved this information properly anyway:
-    yml <- orderly1:::yaml_read(file.path(path, "orderly.yml"))
+    filename <- file.path(path, "orderly.yml")
+    yml <- orderly1:::yaml_read(filename)
     config <- orderly1::orderly_config(file.path(path, "../../.."), FALSE)
-    con <- orderly1:::recipe_migrate(yml, config, yml)$connection
+    con <- orderly1:::recipe_migrate(yml, config, filename, TRUE)$connection
     ret$connection <- lapply(unname(con), function(database) {
       list(database = scalar(database),
            instance = scalar(data$meta$instance[[database]]))
