@@ -43,8 +43,7 @@ orderly2outpack <- function(src, dest, link = FALSE) {
   message("Checking we can migrate this orderly archive")
   check_complete_tree(src)
 
-  known <- orderly2::orderly_search(NULL, options = list(location = "local"),
-                                    root = dest)
+  known <- orderly2::orderly_search(NULL, location = "local", root = dest)
   contents <- orderly1::orderly_list_archive(src)
   contents <- contents[!(contents$id %in% known), ]
   contents <- file.path(src, "archive", contents$name, contents$id)

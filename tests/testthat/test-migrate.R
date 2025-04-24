@@ -6,8 +6,7 @@ test_that("can migrate demo", {
                c(".outpack", "orderly_config.yml"))
   expect_true(file.exists(file.path(dst, ".outpack")))
 
-  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
-                                  root = dst)
+  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
   expect_setequal(ids, orderly1::orderly_list_archive(src)$id)
 })
 
@@ -43,8 +42,7 @@ test_that("notify migrations if files have been modified, but continue", {
     all = FALSE)
   expect_true(file.exists(res$result))
 
-  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
-                                  root = dst)
+  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
   expect_setequal(ids, contents$id)
 })
 
@@ -122,16 +120,14 @@ test_that("can update archive", {
     orderly1::orderly_run("minimal", root = src, echo = FALSE))
   suppressMessages(orderly1::orderly_commit(id, root = src))
 
-  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
-                                  root = dst)
+  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
   expect_false(id %in% ids)
 
   expect_equal(
     suppressMessages(orderly2outpack(src, dst, link = TRUE)),
     dst)
 
-  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
-                                  root = dst)
+  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
   expect_true(id %in% ids)
 })
 
@@ -221,7 +217,6 @@ test_that("can migrate when archive has more than 1 dependency from 1 report", {
                c(".outpack", "orderly_config.yml"))
   expect_true(file.exists(file.path(dst, ".outpack")))
 
-  ids <- orderly2::orderly_search(NULL, options = list(location = "local"),
-                                  root = dst)
+  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
   expect_setequal(ids, orderly1::orderly_list_archive(src)$id)
 })
