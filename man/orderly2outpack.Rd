@@ -4,7 +4,7 @@
 \alias{orderly2outpack}
 \title{Migrate orderly to outpack}
 \usage{
-orderly2outpack(src, dest, link = FALSE)
+orderly2outpack(src, dest, link = FALSE, keep_going = FALSE, parallel = FALSE)
 }
 \arguments{
 \item{src}{Path to the orderly archive to migrate. This must be
@@ -24,6 +24,14 @@ propagated both ways. As a result, only do this where you are
 confident that nothing will alter files in the source archive!
 The use case here is in continually migrating an orderly
 repository.}
+
+\item{keep_going}{Logical, indicating if we should try and migrate as
+much as possible, skipping over packets that fail.}
+
+\item{parallel}{Logical, indicating if we should process data in
+parallel.  This uses \code{parallel::mclapply} so it only works on
+Linux.  Use the \code{mc.cores} option or \code{MC_CORES} environment
+variable to control the number of cores used.}
 }
 \value{
 The path to the newly created archive

@@ -24,15 +24,17 @@
 ##'   The use case here is in continually migrating an orderly
 ##'   repository.
 ##'
-##' @param robust Logical, indicating if we should try and migrate as
+##' @param keep_going Logical, indicating if we should try and migrate as
 ##'   much as possible, skipping over packets that fail.
 ##'
 ##' @param parallel Logical, indicating if we should process data in
-##'   parallel.  This uses
+##'   parallel.  This uses `parallel::mclapply` so it only works on
+##'   Linux.  Use the `mc.cores` option or `MC_CORES` environment
+##'   variable to control the number of cores used.
 ##'
 ##' @return The path to the newly created archive
 ##' @export
-orderly2outpack <- function(src, dest, link = FALSE, robust = FALSE,
+orderly2outpack <- function(src, dest, link = FALSE, keep_going = FALSE,
                             parallel = FALSE) {
   existing <- dir(dest, all.files = TRUE, no.. = TRUE)
   err <- setdiff(existing, c(".outpack", "orderly_config.yml"))
@@ -79,7 +81,7 @@ orderly2outpack <- function(src, dest, link = FALSE, robust = FALSE,
   ok <- vlapply(res, "[[", "success")
   if (!all(ok)) {
     msg <- "Metadata migration failure for {sum(!ok)}/{length(ok)} packet{?s}"
-    if (!robust) {
+    if (!keep_going) {
       cli::cli_abort(msg)
     }
     cli::cli_alert_danger(msg)
