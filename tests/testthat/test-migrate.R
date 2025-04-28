@@ -236,7 +236,7 @@ test_that("cope nicely with migration failure", {
     orderly2outpack(src, tempfile()),
     "Metadata migration failure for 1/21 packets")
 
-  dst <- orderly2outpack(src, tempfile(), robust = TRUE)
+  dst <- orderly2outpack(src, tempfile(), keep_going = TRUE)
   expect_equal(readLines(file.path(dst, ".outpack/import_skipped_ids")),
                c(id2, id1))
   d <- readRDS(file.path(dst, ".outpack/import_skipped.rds"))
