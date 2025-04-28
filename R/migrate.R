@@ -32,14 +32,19 @@
 ##'   Linux.  Use the `mc.cores` option or `MC_CORES` environment
 ##'   variable to control the number of cores used.
 ##'
+##' @param force Allow migration into an existing directory (skipping
+##'   the empty directory check)
+##'
 ##' @return The path to the newly created archive
 ##' @export
 orderly2outpack <- function(src, dest, link = FALSE, keep_going = FALSE,
-                            parallel = FALSE) {
-  existing <- dir(dest, all.files = TRUE, no.. = TRUE)
-  err <- setdiff(existing, c(".outpack", "orderly_config.yml"))
-  if (length(err) > 0) {
-    stop("Destination directory is not a bare outpack destination")
+                            parallel = FALSE, force = FALSE) {
+  if (!force) {
+    existing <- dir(dest, all.files = TRUE, no.. = TRUE)
+    err <- setdiff(existing, c(".outpack", "orderly_config.yml", ".gitignore"))
+    if (length(err) > 0) {
+      stop("Destination directory is not a bare outpack destination")
+    }
   }
   orderly2::orderly_init(dest,
                          path_archive = NULL,

@@ -4,7 +4,14 @@
 \alias{orderly2outpack}
 \title{Migrate orderly to outpack}
 \usage{
-orderly2outpack(src, dest, link = FALSE, keep_going = FALSE, parallel = FALSE)
+orderly2outpack(
+  src,
+  dest,
+  link = FALSE,
+  keep_going = FALSE,
+  parallel = FALSE,
+  force = FALSE
+)
 }
 \arguments{
 \item{src}{Path to the orderly archive to migrate. This must be
@@ -32,6 +39,9 @@ much as possible, skipping over packets that fail.}
 parallel.  This uses \code{parallel::mclapply} so it only works on
 Linux.  Use the \code{mc.cores} option or \code{MC_CORES} environment
 variable to control the number of cores used.}
+
+\item{force}{Allow migration into an existing directory (skipping
+the empty directory check)}
 }
 \value{
 The path to the newly created archive
