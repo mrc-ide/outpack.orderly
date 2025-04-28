@@ -120,7 +120,7 @@ orderly2outpack <- function(src, dest, link = FALSE, keep_going = FALSE,
     orderly2:::outpack_insert_packet(p, x$value$json, root)
   }
 
-  if (length(ids_skip)) {
+  if (length(ids_skip) > 0) {
     cli::cli_alert_warning(
       paste("Writing details of {length(ids_skip)} skipped packet{?s}",
             "to '.outpack/import_skipped*'"))
