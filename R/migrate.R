@@ -206,6 +206,14 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
     "resource"
   role$role[role$role == "global"] <- "shared"
 
+  if (is.null(data$git)) {
+    git <- NULL
+  } else {
+    git <- list(sha = data$git$sha,
+                branch = data$git$branch,
+                url = data$git$github_url)
+  }
+
   custom <- data$meta$extra_fields
   custom <- custom[!vlapply(custom, function(x) is.null(x) || is.na(x))]
   if (!is.null(custom)) {
@@ -237,7 +245,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   }
   json <- orderly2:::outpack_metadata_create(
     path = path, name = name, id = id, time = time, files = files,
-    depends = depends, parameters = parameters, custom = custom,
+    depends = depends, parameters = parameters, git = git, custom = custom,
     file_ignore = NULL, file_hash = NULL,
     hash_algorithm = hash_algorithm)
 

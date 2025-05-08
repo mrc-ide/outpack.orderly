@@ -19,11 +19,12 @@ Imports:
     jsonlite,
     jsonvalidate,
     orderly1 (>= 1.7.0),
-    orderly2 (>= 1.99.2),
+    orderly2 (>= 1.99.65),
     orderly.db (>= 0.1.2),
     withr,
     yaml
 Suggests:
+    gert,
     markdown,
     rmarkdown,
     testthat (>= 3.0.0),

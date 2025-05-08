@@ -3,6 +3,7 @@ test_that("migrating source then archive is same as archive then source", {
   suppressMessages(dst1 <- orderly2outpack(src1, tempfile()))
 
   src2 <- orderly_demo_src()
+  file.copy(file.path(src1, ".git"), src2, recursive = TRUE)
   suppressMessages(orderly2outpack_src(src2, delete_yml = TRUE, strict = TRUE))
   dat <- orderly1:::read_demo_yml(src2)
   for (i in seq_along(dat)) {
