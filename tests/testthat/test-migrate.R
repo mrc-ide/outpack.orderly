@@ -220,3 +220,27 @@ test_that("can migrate when archive has more than 1 dependency from 1 report", {
   ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
   expect_setequal(ids, orderly1::orderly_list_archive(src)$id)
 })
+
+
+test_that("cope nicely with migration failure", {
+  src <- orderly_demo_archive()
+
+  contents <- orderly1::orderly_list_archive(src)
+  id1 <- contents$id[contents$name == "use_dependency"][[1]]
+  meta <- readRDS(
+    file.path(src, "archive", "use_dependency", id1, "orderly_run.rds"))
+  id2 <- meta$meta$depends$id
+  unlink(file.path(src, "archive", "other", id2, "README.md"))
+
+  expect_error(
+    orderly2outpack(src, tempfile()),
+    "Metadata migration failure for 1/21 packets")
+
+  dst <- orderly2outpack(src, tempfile(), keep_going = TRUE)
+  expect_equal(readLines(file.path(dst, ".outpack/import_skipped_ids")),
+               c(id2, id1))
+  d <- readRDS(file.path(dst, ".outpack/import_skipped.rds"))
+  expect_false(d[[1]]$success)
+  expect_true(d[[2]]$success)
+  expect_s3_class(d[[1]]$error, "error")
+})

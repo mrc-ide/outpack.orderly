@@ -24,13 +24,27 @@
 ##'   The use case here is in continually migrating an orderly
 ##'   repository.
 ##'
+##' @param keep_going Logical, indicating if we should try and migrate as
+##'   much as possible, skipping over packets that fail.
+##'
+##' @param parallel Logical, indicating if we should process data in
+##'   parallel.  This uses `parallel::mclapply` so it only works on
+##'   Linux.  Use the `mc.cores` option or `MC_CORES` environment
+##'   variable to control the number of cores used.
+##'
+##' @param force Allow migration into an existing directory (skipping
+##'   the empty directory check)
+##'
 ##' @return The path to the newly created archive
 ##' @export
-orderly2outpack <- function(src, dest, link = FALSE) {
-  existing <- dir(dest, all.files = TRUE, no.. = TRUE)
-  err <- setdiff(existing, c(".outpack", "orderly_config.yml"))
-  if (length(err) > 0) {
-    stop("Destination directory is not a bare outpack destination")
+orderly2outpack <- function(src, dest, link = FALSE, keep_going = FALSE,
+                            parallel = FALSE, force = FALSE) {
+  if (!force) {
+    existing <- dir(dest, all.files = TRUE, no.. = TRUE)
+    err <- setdiff(existing, c(".outpack", "orderly_config.yml", ".gitignore"))
+    if (length(err) > 0) {
+      stop("Destination directory is not a bare outpack destination")
+    }
   }
   orderly2::orderly_init(dest,
                          path_archive = NULL,
@@ -46,17 +60,42 @@ orderly2outpack <- function(src, dest, link = FALSE) {
   known <- orderly2::orderly_search(NULL, location = "local", root = dest)
   contents <- orderly1::orderly_list_archive(src)
   contents <- contents[!(contents$id %in% known), ]
-  contents <- file.path(src, "archive", contents$name, contents$id)
+  contents <- contents[order(contents$id), ]
 
-  ## Theoretically we could do this faster in parallel; not sure if
-  ## we're CPU or IO bound really.
-  message("Reading metadata")
-  res <- lapply(contents, function(p) {
+  migrate_metadata1 <- function(p, hash_algorithm) {
     message(p)
-    orderly_metadata_to_outpack(p, hash_algorithm)
-  })
+    tryCatch(
+      list(success = TRUE,
+           value = orderly_metadata_to_outpack(p, hash_algorithm)),
+      error = function(e) {
+        cli::cli_alert_danger("Metadata failure for '{p}': {e}")
+        id <- basename(p)
+        name <- basename(dirname(p))
+        list(success = FALSE, value = list(id = id, name = name), error = e)
+      })
+  }
 
-  res <- res[order(vapply(res, "[[", "", "id"))]
+  message("Reading metadata")
+  paths <- file.path(src, "archive", contents$name, contents$id)
+  if (isFALSE(parallel)) {
+    res <- lapply(paths, migrate_metadata1, hash_algorithm)
+  } else {
+    res <- parallel::mclapply(paths, migrate_metadata1, hash_algorithm)
+  }
+
+  ok <- vlapply(res, "[[", "success")
+  if (!all(ok)) {
+    msg <- "Metadata migration failure for {sum(!ok)}/{length(ok)} packet{?s}"
+    if (!keep_going) {
+      cli::cli_abort(msg)
+    }
+    cli::cli_alert_danger(msg)
+    cli::cli_alert_info(
+      "These packets will be skipped and we can try these later")
+    ids_skip <- contents$id[!ok]
+  } else {
+    ids_skip <- character()
+  }
 
   root <- orderly2:::root_open(dest, FALSE)
 
@@ -67,9 +106,32 @@ orderly2outpack <- function(src, dest, link = FALSE) {
 
   message("Importing packets")
   for (x in res) {
-    message(sprintf("%s/%s", x$name, x$id))
-    p <- file.path(src, "archive", x$name, x$id)
-    orderly2:::outpack_insert_packet(p, x$json, root)
+    message(sprintf("%s/%s", x$value$name, x$value$id))
+    if (!x$success) {
+      cli::cli_alert_danger("skipping due to failure reading metadata")
+      next
+    }
+
+    uses_skipped_packet <-
+      any(ids_skip %in% jsonlite::fromJSON(x$value$json)$depends$packet)
+
+    if (uses_skipped_packet) {
+      cli::cli_alert_danger("skipping due to use of skipped dependency")
+      ids_skip <- c(ids_skip, x$value$id)
+      next
+    }
+
+    p <- file.path(src, "archive", x$value$name, x$value$id)
+    orderly2:::outpack_insert_packet(p, x$value$json, root)
+  }
+
+  if (length(ids_skip) > 0) {
+    cli::cli_alert_warning(
+      paste("Writing details of {length(ids_skip)} skipped packet{?s}",
+            "to '.outpack/import_skipped*'"))
+    saveRDS(res[contents$id %in% ids_skip],
+            file.path(dest, ".outpack/import_skipped.rds"))
+    writeLines(ids_skip, file.path(dest, ".outpack/import_skipped_ids"))
   }
 
   dest
