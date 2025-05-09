@@ -244,3 +244,25 @@ test_that("cope nicely with migration failure", {
   expect_true(d[[2]]$success)
   expect_s3_class(d[[1]]$error, "error")
 })
+
+
+test_that("can migrate git data", {
+  expect_null(migrate_git(list()))
+  expect_equal(
+    migrate_git(list(git = list(sha = "abc123"))),
+    list(sha = "abc123",
+         branch = NULL,
+         url = NULL))
+  expect_equal(
+    migrate_git(list(git = list(sha = "abc123", branch = "main", other = 1))),
+    list(sha = "abc123",
+         branch = "main",
+         url = NULL))
+  expect_equal(
+    migrate_git(list(git = list(
+      sha = "abc123", branch = "main",
+      github_url = "https://github.com/example/repo"))),
+    list(sha = "abc123",
+         branch = "main",
+         url = "https://github.com/example/repo"))
+})
