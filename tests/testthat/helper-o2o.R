@@ -1,9 +1,15 @@
 orderly_demo_archive_path <- tempfile(fileext = ".zip")
 orderly_demo_archive <- function() {
   if (!file.exists(orderly_demo_archive_path)) {
-    src <- orderly1::orderly_example("demo", run_demo = TRUE, quiet = TRUE)
+    src <- orderly1::orderly_example("demo", run_demo = FALSE, quiet = TRUE,
+                                     git = TRUE)
     on.exit(unlink(src, recursive = TRUE))
-    zip::zip(orderly_demo_archive_path, dir(src), root = src)
+    gert::git_remote_set_url("https://github.com/example/orderly",
+                             remote = "origin", repo = src)
+    orderly1:::run_orderly_demo(src, quiet = TRUE)
+    zip::zip(orderly_demo_archive_path,
+             dir(src, all.files = TRUE, no.. = TRUE),
+             root = src)
   }
   dest <- tempfile()
   zip::unzip(orderly_demo_archive_path, exdir = dest)
