@@ -35,6 +35,16 @@ test_that("refuse to migrate directories containing both old and new source", {
 })
 
 
+test_that("refuse to migrate dirs containing both old and very new source", {
+  path <- orderly_demo_src()
+  dir.create(file.path(path, "src", "new"))
+  file.create(file.path(path, "src", "new", "new.R"))
+  expect_error(
+    orderly2outpack_src(path),
+    "Some source directories already contain new-style orderly files: new")
+})
+
+
 test_that("can preserve original files after migration", {
   path1 <- orderly_demo_src()
   path2 <- orderly_demo_src()
@@ -65,7 +75,7 @@ test_that("can add strict mode", {
   path <- orderly_demo_src()
   nms <- orderly1::orderly_list(path)
   suppressMessages(orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE))
-  str <- vapply(file.path(path, "src", nms, "orderly.R"),
+  str <- vapply(file.path(path, "src", nms, paste0(nms, ".R")),
                 function(p) readLines(p, n = 1), "",
                 USE.NAMES = FALSE)
   expect_equal(str, rep("orderly2::orderly_strict_mode()", length(nms)))
@@ -78,7 +88,7 @@ test_that("can not add strict mode", {
   suppressMessages(orderly2outpack_src(path, delete_yml = TRUE, strict = FALSE))
   str <- "orderly2::orderly_strict_mode()"
   expect_false(
-    any(vapply(file.path(path, "src", nms, "orderly.R"),
+    any(vapply(file.path(path, "src", nms, paste0(nms, ".R")),
                function(p) any(grepl(str, readLines(p), fixed = TRUE)),
                TRUE)))
 })
