@@ -61,7 +61,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
 
   for (i in seq_along(nms)) {
     writeLines(dat_new[[i]]$code,
-               file.path(path, "src", nms[[i]], nms_dest))
+               file.path(path, "src", nms[[i]], nms_dest[[i]]))
   }
 
   if (delete_yml) {
@@ -228,10 +228,12 @@ src_migrate_artefacts <- function(cfg, dat) {
     description <- dat$artefacts[i, ]$description
     filenames <- dat$artefacts[i, ]$filenames
     if (length(filenames) == 1L) {
-      args <- sprintf('"%s", "%s"', description, filenames)
+      args <- sprintf('files = "%s", description = "%s"',
+                      filenames, description)
     } else {
-      args <- sprintf('\n  "%s",\n  c(%s)', description,
-                      paste(dquote(filenames), collapse = ", "))
+      args <- sprintf('\n  files = c(%s),\n  description = "%s"',
+                      paste(dquote(filenames), collapse = ", "),
+                      description)
     }
     ret <- c(ret, sprintf(fmt, args))
   }
