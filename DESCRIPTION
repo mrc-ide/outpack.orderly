@@ -19,7 +19,7 @@ Imports:
     jsonlite,
     jsonvalidate,
     orderly1 (>= 1.7.0),
-    orderly2 (>= 1.99.65),
+    orderly2 (>= 1.99.67),
     orderly.db (>= 0.1.2),
     withr,
     yaml
@@ -32,6 +32,6 @@ Suggests:
 Config/testthat/edition: 3
 Remotes:
     ropensci/jsonvalidate,
-    mrc-ide/orderly2,
+    mrc-ide/orderly2@mrc-6512,
     mrc-ide/orderly.db,
     orderly1=vimc/orderly@vimc-7135

@@ -257,7 +257,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
                               data = orderly_db_json)
   }
   json <- orderly2:::outpack_metadata_create(
-    path = path, name = name, id = id, time = time, files = unique(files),
+    path = path, name = name, id = id, time = time, files = files,
     depends = depends, parameters = parameters, git = git, custom = custom,
     file_ignore = NULL, file_hash = NULL,
     hash_algorithm = hash_algorithm)
