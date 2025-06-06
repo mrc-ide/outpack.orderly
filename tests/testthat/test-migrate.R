@@ -266,3 +266,32 @@ test_that("can migrate git data", {
          branch = "main",
          url = "https://github.com/example/repo"))
 })
+
+
+
+test_that("can collapse filenames", {
+  skip_on_os(c("windows", "mac"))
+  tmp <- withr::local_tempdir()
+  writeLines("hello", file.path(tmp, "README.md"))
+  writeLines("hello", file.path(tmp, "readme.md"))
+
+  expect_null(check_files_remap(c("a", "b"), tmp))
+  expect_null(check_files_remap(c("a", "b", "README.md"), tmp))
+  expect_equal(
+    check_files_remap(c("a", "b", "README.md", "readme.md"), tmp),
+    data.frame(from = "readme.md", to = "README.md"))
+
+  writeLines("", file.path(tmp, "readme.md"))
+  expect_message(
+    res <- check_files_remap(c("a", "b", "README.md", "readme.md"), tmp),
+    "but the content is different")
+  expect_equal(res, data.frame(from = "readme.md", to = "README.md"))
+})
+
+
+test_that("can apply a remap over a vector of filenames", {
+  remap <- data.frame(from = "readme.md", to = "README.md")
+  expect_equal(
+    apply_files_remap(c("a", "b", "readme.md", "c", "README.md"), remap),
+    c("a", "b", "README.md", "c", "README.md"))
+})
