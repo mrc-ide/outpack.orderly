@@ -308,7 +308,8 @@ orderly_db_metadata_to_outpack <- function(path, data) {
     filename <- file.path(path, "orderly.yml")
     yml <- orderly1:::yaml_read(filename)
     config <- orderly1::orderly_config(file.path(path, "../../.."), FALSE)
-    con <- orderly1:::recipe_migrate(yml, config, filename, TRUE)$connection
+    suppressWarnings(
+      con <- orderly1:::recipe_migrate(yml, config, filename, TRUE)$connection)
     ret$connection <- lapply(unname(con), function(database) {
       list(database = scalar(database),
            instance = scalar(data$meta$instance[[database]]))
