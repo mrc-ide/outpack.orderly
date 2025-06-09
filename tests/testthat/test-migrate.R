@@ -266,3 +266,74 @@ test_that("can migrate git data", {
          branch = "main",
          url = "https://github.com/example/repo"))
 })
+
+
+
+test_that("can collapse filenames", {
+  skip_on_os(c("windows", "mac"))
+  tmp <- withr::local_tempdir()
+  writeLines("hello", file.path(tmp, "README.md"))
+  writeLines("hello", file.path(tmp, "readme.md"))
+
+  expect_null(check_files_remap(c("a", "b"), tmp))
+  expect_null(check_files_remap(c("a", "b", "README.md"), tmp))
+  expect_equal(
+    check_files_remap(c("a", "b", "README.md", "readme.md"), tmp),
+    data.frame(from = "readme.md", to = "README.md"))
+
+  writeLines("", file.path(tmp, "readme.md"))
+  expect_message(
+    res <- check_files_remap(c("a", "b", "README.md", "readme.md"), tmp),
+    "but the content is different")
+  expect_equal(res, data.frame(from = "readme.md", to = "README.md"))
+})
+
+
+test_that("can apply a remap over a vector of filenames", {
+  remap <- data.frame(from = "readme.md", to = "README.md")
+  expect_equal(
+    apply_files_remap(c("a", "b", "readme.md", "c", "README.md"), remap),
+    c("a", "b", "README.md", "c", "README.md"))
+})
+
+
+test_that("can collapse filenames when migrating metadata", {
+  skip_on_os(c("windows", "mac"))
+
+  src <- withr::local_tempdir()
+  suppressMessages({
+    orderly1::orderly_init(src)
+    orderly1::orderly_new("example", root = src)
+  })
+
+  writeLines('file.copy("file.md", "FILE.md")',
+             file.path(src, "src", "example", "script.R"))
+  writeLines("hello", file.path(src, "src", "example", "file.md"))
+  writeLines("script: script.R
+artefacts:
+  - staticgraph:
+      description: Final FILE
+      filenames: FILE.md
+resources:
+  - file.md", file.path(src, "src", "example", "orderly.yml"))
+  suppressMessages(
+    id <- orderly1::orderly_run("example", root = src, echo = FALSE))
+  suppressMessages(orderly1::orderly_commit(id, root = src))
+
+  dst <- withr::local_tempdir()
+  msg <- testthat::capture_messages(dst <- orderly2outpack(src, dst))
+
+  meta <- orderly2::orderly_metadata(id, root = dst)
+  expect_equal(nrow(meta$files), 3)
+
+  ## Locale will affect the case selected here, so be defensive:
+  file_md <- setdiff(meta$files$path, c("orderly.yml", "script.R"))
+  expect_true(length(file_md) == 1)
+  expect_true(file_md %in% c("FILE.md", "file.md"))
+  expect_setequal(meta$files$path, c("orderly.yml", "script.R", file_md))
+
+  expect_equal(meta$custom$orderly$role,
+               data.frame(path = c("orderly.yml", "script.R", file_md),
+                          role = rep("resource", 3)))
+  expect_equal(meta$custom$orderly$artefact$paths[[1]], list(file_md))
+})

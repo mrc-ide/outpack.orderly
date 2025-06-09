@@ -32,11 +32,11 @@ orderly_demo_src <- function() {
     before <- c(
       before,
       "other_change_script <- function() {",
-      '  txt <- readLines("src/other/orderly.R")',
+      '  txt <- readLines("src/other/other.R")',
       '  i <- grep("^source", txt)',
       '  stopifnot(txt[[i + 1]] == "")',
       '  txt[[i + 1]] <- "extract$number <- extract$number * 1.2"',
-      '  writeLines(txt, "src/other/orderly.R")',
+      '  writeLines(txt, "src/other/other.R")',
       '}')
     writeLines(before, path_before)
     on.exit(unlink(path, recursive = TRUE))

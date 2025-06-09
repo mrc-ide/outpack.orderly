@@ -149,6 +149,25 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   files <- c(data$meta$file_info_inputs$filename,
              data$meta$file_info_artefacts$filename,
              data$meta$depends$as)
+
+  ## Potentially there's a small issue here with files that have
+  ## README.md and readme.md present; we see this in a couple of VIMC
+  ## things despite our efforts to prevent it.
+  ##
+  ## Fixing this is quite complicated because we need to rewrite all
+  ## the places where the metadata might be used, and because files
+  ## itself is allowed to contain duplicates at this point!
+  remap <- check_files_remap(files, path)
+  if (!is.null(remap)) {
+    files <- apply_files_remap(files, remap)
+    data$meta$file_info_inputs$filename <-
+      apply_files_remap(data$meta$file_info_inputs$filename, remap)
+    data$meta$file_info_artefacts$filename <-
+      apply_files_remap(data$meta$file_info_artefacts$filename, remap)
+    data$meta$depends$as <-
+      apply_files_remap(data$meta$depends$as, remap)
+  }
+
   hash_expected <- sprintf(
     "md5:%s", c(data$meta$file_info_inputs$file_hash,
                 data$meta$file_info_artefacts$file_hash,
@@ -308,7 +327,9 @@ orderly_db_metadata_to_outpack <- function(path, data) {
     filename <- file.path(path, "orderly.yml")
     yml <- orderly1:::yaml_read(filename)
     config <- orderly1::orderly_config(file.path(path, "../../.."), FALSE)
-    con <- orderly1:::recipe_migrate(yml, config, filename, TRUE)$connection
+    con <- suppressWarnings(
+      suppressMessages(
+        orderly1:::recipe_migrate(yml, config, filename, TRUE)$connection))
     ret$connection <- lapply(unname(con), function(database) {
       list(database = scalar(database),
            instance = scalar(data$meta$instance[[database]]))
@@ -341,4 +362,45 @@ archive_migrate_depends <- function(depends, parameters) {
            query = query,
            files = data_frame(here = x$as, there = x$filename))
     }))
+}
+
+
+check_files_remap <- function(files, path) {
+  files_unique <- unique(files)
+  files_unique_lower <- tolower(files_unique)
+  i <- anyDuplicated(files_unique_lower)
+  if (i == 0) {
+    return(NULL)
+  }
+
+  ret <- lapply(unique(files_unique_lower[i]), function(x) {
+    v <- files_unique[files_unique_lower == x]
+    ## I don't think that this is really needed?  However, it would be
+    ## nice to check really.
+    h <- withr::with_dir(path, orderly2:::hash_files(v, "md5"))
+    if (length(unique(h)) > 1) {
+      cli::cli_alert_warning(
+        "Collapsing filenames {squote(v)}, but the content is different!")
+    }
+    v
+  })
+
+  to <- vcapply(ret, function(x) {
+    x[[match("README.md", basename(x), nomatch = 1)]]
+  })
+  from <- Map(setdiff, ret, to)
+
+  data.frame(from = unlist(from),
+             to = rep(to, lengths(from)),
+             stringsAsFactors = FALSE)
+}
+
+
+apply_files_remap <- function(files, remap) {
+  i <- match(files, remap$from)
+  if (any(!is.na(i))) {
+    j <- !is.na(i)
+    files[j] <- remap$to[i[j]]
+  }
+  files
 }

@@ -1,5 +1,5 @@
 ##' Migrate an orderly *source directory* for use with outpack.  This
-##' works in place, writing out `orderly.R` files and deleting
+##' works in place, writing out `<name>/<name>.R` files and deleting
 ##' `orderly.yml` files (optionally). This is intended to be run on a
 ##' clean clone of your source git repository.
 ##'
@@ -27,10 +27,16 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
 
   global_path <- cfg$global_resources
   nms <- orderly1::orderly_list(path)
+  nms_dest <- paste0(nms, ".R")
 
   i <- file.exists(file.path(path, "src", nms, "orderly.R"))
   if (any(i)) {
     stop("Some source directories already contain 'orderly.R' files: ",
+         paste(nms[i], collapse = ", "))
+  }
+  i <- file.exists(file.path(path, "src", nms, nms_dest))
+  if (any(i)) {
+    stop("Some source directories already contain new-style orderly files: ",
          paste(nms[i], collapse = ", "))
   }
 
@@ -55,7 +61,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
 
   for (i in seq_along(nms)) {
     writeLines(dat_new[[i]]$code,
-               file.path(path, "src", nms[[i]], "orderly.R"))
+               file.path(path, "src", nms[[i]], nms_dest[[i]]))
   }
 
   if (delete_yml) {
@@ -222,10 +228,12 @@ src_migrate_artefacts <- function(cfg, dat) {
     description <- dat$artefacts[i, ]$description
     filenames <- dat$artefacts[i, ]$filenames
     if (length(filenames) == 1L) {
-      args <- sprintf('"%s", "%s"', description, filenames)
+      args <- sprintf('files = "%s", description = "%s"',
+                      filenames, description)
     } else {
-      args <- sprintf('\n  "%s",\n  c(%s)', description,
-                      paste(dquote(filenames), collapse = ", "))
+      args <- sprintf('\n  files = c(%s),\n  description = "%s"',
+                      paste(dquote(filenames), collapse = ", "),
+                      description)
     }
     ret <- c(ret, sprintf(fmt, args))
   }

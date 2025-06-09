@@ -25,7 +25,7 @@ Nothing, called for side effects only
 }
 \description{
 Migrate an orderly \emph{source directory} for use with outpack.  This
-works in place, writing out \code{orderly.R} files and deleting
+works in place, writing out \verb{<name>/<name>.R} files and deleting
 \code{orderly.yml} files (optionally). This is intended to be run on a
 clean clone of your source git repository.
 }
