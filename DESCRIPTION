@@ -32,6 +32,6 @@ Suggests:
 Config/testthat/edition: 3
 Remotes:
     ropensci/jsonvalidate,
-    mrc-ide/orderly2@mrc-6512,
+    mrc-ide/orderly2,
     mrc-ide/orderly.db,
     orderly1=vimc/orderly@vimc-7135
