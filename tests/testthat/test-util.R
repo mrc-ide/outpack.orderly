@@ -10,6 +10,6 @@ test_that("control quoting", {
   expect_equal(strquote("foo"), '"foo"')
   expect_equal(strquote('foo "bar"'), "'foo \"bar\"'")
   expect_equal(strquote("foo 'bar'"), "\"foo 'bar'\"")
-  expect_error(strquote("'foo' \"bar\""),
-               "Can't quote this")
+  expect_equal(strquote("'foo' \"bar\""),
+               "\"'foo' \\\"bar\\\"\"")
 })

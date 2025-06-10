@@ -38,7 +38,7 @@ strquote <- function(x) {
   } else if (!grepl("'", x, fixed = TRUE)) {
     squote(x)
   } else {
-    stop("Can't quote this")
+    dquote(gsub('"', '\\\\"', x))
   }
 }
 
