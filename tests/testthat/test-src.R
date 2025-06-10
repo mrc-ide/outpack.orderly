@@ -275,3 +275,15 @@ test_that("throw informative error on parse failure", {
     src_migrate_validate("foo", "some error"),
     "Generated invalid code for 'foo':")
 })
+
+
+test_that("report failure to migrate source", {
+  path <- orderly_demo_src()
+  writeLines("  not: really: yaml",
+             file.path(path, "src", "other", "orderly.yml"))
+  expect_error(
+    expect_message(
+      orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE),
+      "Failed to migrate 'other'"),
+    "Some migrations failed, see above")
+})
