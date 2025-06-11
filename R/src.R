@@ -47,7 +47,20 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
   nms <- nms[i]
 
   cfg_new <- src_migrate_cfg(cfg$raw)
-  dat_new <- lapply(nms, src_migrate_src, cfg, strict)
+  dat_new <- lapply(nms, function(nm) {
+    tryCatch(
+      src_migrate_src(nm, cfg, strict),
+      error = function(e) {
+        message(sprintf("Failed to migrate '%s': %s", nm, conditionMessage(e)))
+        NULL
+      })
+  })
+
+  err <- vlapply(dat_new, is.null)
+
+  if (any(err)) {
+    stop("Some migrations failed, see above")
+  }
 
   if (dry_run) {
     return(invisible(path))
@@ -74,7 +87,9 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
     fs::file_move(file.path(path, global_path), file.path(path, "shared"))
   }
 
-  orderly2::orderly_init(path)
+  withr::with_options(
+    list(orderly_git_error_is_warning = TRUE),
+    orderly2::orderly_init(path))
 
   invisible(path)
 }
@@ -128,7 +143,8 @@ src_migrate_src <- function(name, cfg, strict) {
     src_migrate_sources,
     src_migrate_script)
 
-  dat <- suppressWarnings(orderly1:::orderly_recipe$new(name, cfg, TRUE))
+  dat <- suppressMessages(
+    suppressWarnings(orderly1:::orderly_recipe$new(name, cfg, TRUE)))
   code <- if (strict) "orderly2::orderly_strict_mode()" else character(0)
   for (f in migrate) {
     code <- add_section(code, f(cfg, dat))
