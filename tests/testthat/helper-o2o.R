@@ -46,3 +46,15 @@ orderly_demo_src <- function() {
   zip::unzip(orderly_demo_src_path, exdir = dest)
   dest
 }
+
+
+ignore_parameter_warning <- function(expr) {
+  str <- "You must assign calls to 'orderly_parameters()' to a variable"
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      if (startsWith(conditionMessage(w), str)) {
+        tryInvokeRestart("muffleWarning")
+      }
+    })
+}

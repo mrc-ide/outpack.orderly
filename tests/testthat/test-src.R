@@ -1,7 +1,6 @@
 test_that("Can migrate orderly demo directory", {
   path <- orderly_demo_src()
   suppressMessages(orderly2outpack_src(path, delete_yml = TRUE, strict = TRUE))
-
   dat <- orderly1:::read_demo_yml(path)
   for (i in seq_along(dat)) {
     x <- dat[[i]]
@@ -9,9 +8,9 @@ test_that("Can migrate orderly demo directory", {
       withr::with_dir(path, x$before())
     }
     env <- new.env(parent = .GlobalEnv)
-    expect_no_error(suppressMessages(
-      dat[[i]]$id <- orderly2::orderly_run(x$name, x$parameters, envir = env,
-                                           root = path, echo = FALSE)))
+    expect_no_error(suppressMessages(ignore_parameter_warning(
+      dat[[i]]$id <- orderly::orderly_run(x$name, x$parameters, envir = env,
+                                          root = path, echo = FALSE))))
   }
 })
 
@@ -78,7 +77,7 @@ test_that("can add strict mode", {
   str <- vapply(file.path(path, "src", nms, paste0(nms, ".R")),
                 function(p) readLines(p, n = 1), "",
                 USE.NAMES = FALSE)
-  expect_equal(str, rep("orderly2::orderly_strict_mode()", length(nms)))
+  expect_equal(str, rep("orderly::orderly_strict_mode()", length(nms)))
 })
 
 
@@ -86,7 +85,7 @@ test_that("can not add strict mode", {
   path <- orderly_demo_src()
   nms <- orderly1::orderly_list(path)
   suppressMessages(orderly2outpack_src(path, delete_yml = TRUE, strict = FALSE))
-  str <- "orderly2::orderly_strict_mode()"
+  str <- "orderly::orderly_strict_mode()"
   expect_false(
     any(vapply(file.path(path, "src", nms, paste0(nms, ".R")),
                function(p) any(grepl(str, readLines(p), fixed = TRUE)),
@@ -110,7 +109,7 @@ test_that("can migrate single, simple, dependency", {
     is_pinned = FALSE)
   expect_equal(
     src_migrate_depends(list(), list(depends = depends)),
-    paste('orderly2::orderly_dependency("name", "latest",',
+    paste('orderly::orderly_dependency("name", "latest",',
           'c(incoming.csv = "filename.csv"))'))
 })
 
@@ -128,7 +127,7 @@ test_that("can migrate dependency with long string and quotes", {
     is_pinned = FALSE)
   cfg <- list(parameters = c("some_name", "another", "a_third"))
   res <- src_migrate_depends(list(), list(depends = depends))
-  cmp <- paste('orderly2::orderly_dependency("name",',
+  cmp <- paste('orderly::orderly_dependency("name",',
                '\'latest(parameter:some_name == "some_parameter" &&',
                'parameter:another == "another" &&',
                'parameter:a_third == "another one!")\',',
@@ -148,7 +147,7 @@ test_that("can migrate single, multi-piece, dependency", {
     is_pinned = FALSE)
   expect_equal(
     src_migrate_depends(list(), list(depends = depends)),
-    paste("orderly2::orderly_dependency(",
+    paste("orderly::orderly_dependency(",
           '  "name",',
           '  "latest(parameter:x = 1)",',
           '  c("d/a.csv" = "a.csv",',
@@ -168,13 +167,13 @@ test_that("can migrate multiple, multi-piece, dependency", {
     is_pinned = FALSE)
   expect_equal(
     src_migrate_depends(list(), list(depends = depends)),
-    c(paste("orderly2::orderly_dependency(",
+    c(paste("orderly::orderly_dependency(",
             '  "name",',
             '  "latest(parameter:x = 1)",',
             '  c("1.csv" = "a.csv",',
             '    x.csv = "b.csv"))',
             sep = "\n"),
-      paste('orderly2::orderly_dependency("name", "latest(parameter:x = 1)",',
+      paste('orderly::orderly_dependency("name", "latest(parameter:x = 1)",',
             'c(y.csv = "a.csv"))')))
 })
 
@@ -185,12 +184,12 @@ test_that("can migrate global resources", {
     src_migrate_global_resources(
       list(),
       list(global_resources = c(a.csv = "b.csv"))),
-    'orderly2::orderly_shared_resource(a.csv = "b.csv")')
+    'orderly::orderly_shared_resource(a.csv = "b.csv")')
   expect_equal(
     src_migrate_global_resources(
       list(),
       list(global_resources = c("path/a.csv" = "b.csv"))),
-    'orderly2::orderly_shared_resource("path/a.csv" = "b.csv")')
+    'orderly::orderly_shared_resource("path/a.csv" = "b.csv")')
 })
 
 
@@ -200,12 +199,12 @@ test_that("can migrate parameters", {
     src_migrate_parameters(
       list(),
       list(parameters = list(a = NULL, b = NULL))),
-    'orderly2::orderly_parameters(a = NULL, b = NULL)')
+    'orderly::orderly_parameters(a = NULL, b = NULL)')
   expect_equal(
     src_migrate_parameters(
       list(),
       list(parameters = list(a = list(default = 1), b = list(default = "x")))),
-    'orderly2::orderly_parameters(a = 1, b = "x")')
+    'orderly::orderly_parameters(a = 1, b = "x")')
 })
 
 
@@ -214,12 +213,12 @@ test_that("can migrate invalid-ish parameters", {
     src_migrate_parameters(
       list(),
       list(parameters = list(a = 1, b = 2))),
-    "orderly2::orderly_parameters(a = 1, b = 2)"  )
+    "orderly::orderly_parameters(a = 1, b = 2)"  )
   expect_equal(
     src_migrate_parameters(
       list(),
       list(parameters = list(a = 1, b = NULL))),
-    "orderly2::orderly_parameters(a = 1, b = NULL)")
+    "orderly::orderly_parameters(a = 1, b = NULL)")
 })
 
 
@@ -241,15 +240,15 @@ test_that("can migrate descriptions", {
   expect_null(src_migrate_description(NULL, list(displayname = NULL)))
   expect_equal(
     src_migrate_description(NULL, list(displayname = "a")),
-    'orderly2::orderly_description(\n  display = "a")')
+    'orderly::orderly_description(\n  display = "a")')
   expect_equal(
     src_migrate_description(NULL, list(displayname = "a",
                                        fields = list(x = 1))),
-    'orderly2::orderly_description(\n  display = "a",\n  custom = list(x = 1))')
+    'orderly::orderly_description(\n  display = "a",\n  custom = list(x = 1))')
   expect_equal(
     src_migrate_description(NULL, list(displayname = "a",
                                        fields = list(x = NA))),
-    'orderly2::orderly_description(\n  display = "a")')
+    'orderly::orderly_description(\n  display = "a")')
   expect_null(src_migrate_description(NULL, list(fields = list(x = NA))))
 })
 

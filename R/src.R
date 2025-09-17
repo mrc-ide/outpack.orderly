@@ -11,7 +11,7 @@
 ##'   should be deleted.
 ##'
 ##' @param strict Logical, indicating if we should enable
-##'   [`orderly2::orderly_strict_mode()`] in the resulting source
+##'   [`orderly::orderly_strict_mode()`] in the resulting source
 ##'   files. You can always add this later to specific cases (or
 ##'   remove it).
 ##'
@@ -89,7 +89,7 @@ orderly2outpack_src <- function(path, delete_yml = FALSE, strict = FALSE,
 
   withr::with_options(
     list(orderly_git_error_is_warning = TRUE),
-    orderly2::orderly_init(path))
+    orderly::orderly_init(path))
 
   invisible(path)
 }
@@ -145,7 +145,7 @@ src_migrate_src <- function(name, cfg, strict) {
 
   dat <- suppressMessages(
     suppressWarnings(orderly1:::orderly_recipe$new(name, cfg, TRUE)))
-  code <- if (strict) "orderly2::orderly_strict_mode()" else character(0)
+  code <- if (strict) "orderly::orderly_strict_mode()" else character(0)
   for (f in migrate) {
     code <- add_section(code, f(cfg, dat))
   }
@@ -165,7 +165,7 @@ src_migrate_description <- function(cfg, dat) {
   args_str <- paste(sprintf("\n  %s = %s", names(args),
                             vapply(args, deparse1, "", width.cutoff = 500)),
                     collapse = ",")
-  sprintf("orderly2::orderly_description(%s)", args_str)
+  sprintf("orderly::orderly_description(%s)", args_str)
 }
 
 
@@ -175,7 +175,7 @@ src_migrate_parameters <- function(cfg, dat) {
   }
   ## TODO: there's some inconsistency here with pluralisation in
   ## orderly2, might need some updating.
-  fmt <- "orderly2::orderly_parameters(%s)"
+  fmt <- "orderly::orderly_parameters(%s)"
   pars <- vcapply(dat$parameters,
                   function(x) deparse1(if (is.atomic(x)) x else x$default))
   args <- sprintf("%s = %s", names(pars), pars)
@@ -187,7 +187,7 @@ src_migrate_global_resources <- function(cfg, dat) {
   if (is.null(dat$global_resources)) {
     return(NULL)
   }
-  fmt <- "orderly2::orderly_shared_resource(%s)"
+  fmt <- "orderly::orderly_shared_resource(%s)"
   args <- sprintf('%s = "%s"',
                   dquote_if_required(names(dat$global_resources)),
                   unname(dat$global_resources))
@@ -199,7 +199,7 @@ src_migrate_resources <- function(cfg, dat) {
   if (is.null(dat$resources)) {
     return(NULL)
   }
-  fmt <- "orderly2::orderly_resource(%s)"
+  fmt <- "orderly::orderly_resource(%s)"
   if (length(dat$resources) == 1L) {
     args <- dquote(dat$resources)
   } else {
@@ -224,11 +224,11 @@ src_migrate_depends <- function(cfg, dat) {
     here <- el$as
     use <- sprintf("%s = %s", dquote_if_required(here), dquote(there))
     if (length(there) == 1) {
-      str <- sprintf('orderly2::orderly_dependency("%s", %s, c(%s))',
+      str <- sprintf('orderly::orderly_dependency("%s", %s, c(%s))',
                      name, strquote(query), use)
     } else {
       str <- sprintf(
-        'orderly2::orderly_dependency(\n  "%s",\n  %s,\n  c(%s))',
+        'orderly::orderly_dependency(\n  "%s",\n  %s,\n  c(%s))',
         name, strquote(query), paste(use, collapse = ",\n    "))
     }
     ret <- c(ret, str)
@@ -238,7 +238,7 @@ src_migrate_depends <- function(cfg, dat) {
 
 
 src_migrate_artefacts <- function(cfg, dat) {
-  fmt <- "orderly2::orderly_artefact(%s)"
+  fmt <- "orderly::orderly_artefact(%s)"
   ret <- character()
   for (i in seq_len(nrow(dat$artefacts))) {
     description <- dat$artefacts[i, ]$description
@@ -263,14 +263,14 @@ src_migrate_packages <- function(cfg, dat) {
 
 
 src_migrate_sources <- function(cfg, dat) {
-  c(sprintf('orderly2::orderly_resource("%s")', dat$sources),
+  c(sprintf('orderly::orderly_resource("%s")', dat$sources),
     sprintf('source("%s")', dat$sources))
 }
 
 
 src_migrate_script <- function(cfg, dat) {
   code <- read_lines(file.path(cfg$root, "src", dat$name, dat$script))
-  code <- sub("orderly1?::orderly_run_info", "orderly2::orderly_run_info",
+  code <- sub("orderly1?::orderly_run_info", "orderly::orderly_run_info",
               code)
   code
 }
