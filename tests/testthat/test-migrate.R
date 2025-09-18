@@ -6,7 +6,7 @@ test_that("can migrate demo", {
                c(".outpack", "orderly_config.yml"))
   expect_true(file.exists(file.path(dst, ".outpack")))
 
-  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
+  ids <- orderly::orderly_search(NULL, location = "local", root = dst)
   expect_setequal(ids, orderly1::orderly_list_archive(src)$id)
 })
 
@@ -42,7 +42,7 @@ test_that("notify migrations if files have been modified, but continue", {
     all = FALSE)
   expect_true(file.exists(res$result))
 
-  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
+  ids <- orderly::orderly_search(NULL, location = "local", root = dst)
   expect_setequal(ids, contents$id)
 })
 
@@ -93,10 +93,10 @@ test_that("test weird special cases", {
   res <- suppressMessages(orderly2outpack(src, tempfile()))
 
   ## Check everything is the same
-  expect_identical(orderly2::orderly_metadata(id1, cmp),
-                   orderly2::orderly_metadata(id1, res))
-  expect_identical(orderly2::orderly_metadata(id2, cmp),
-                   orderly2::orderly_metadata(id2, res))
+  expect_identical(orderly::orderly_metadata(id1, cmp),
+                   orderly::orderly_metadata(id1, res))
+  expect_identical(orderly::orderly_metadata(id2, cmp),
+                   orderly::orderly_metadata(id2, res))
 })
 
 
@@ -120,14 +120,14 @@ test_that("can update archive", {
     orderly1::orderly_run("minimal", root = src, echo = FALSE))
   suppressMessages(orderly1::orderly_commit(id, root = src))
 
-  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
+  ids <- orderly::orderly_search(NULL, location = "local", root = dst)
   expect_false(id %in% ids)
 
   expect_equal(
     suppressMessages(orderly2outpack(src, dst, link = TRUE)),
     dst)
 
-  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
+  ids <- orderly::orderly_search(NULL, location = "local", root = dst)
   expect_true(id %in% ids)
 })
 
@@ -208,8 +208,10 @@ test_that("can migrate when archive has more than 1 dependency from 1 report", {
   writeLines(multi_dependency_script, file.path(multi_dependency, "script.R"))
   yaml::write_yaml(multi_dependency_yml,
                    file.path(multi_dependency, "orderly.yml"))
-  x <- orderly1::orderly_run("multi-dependency", root = src)
-  orderly1::orderly_commit(x, root = src)
+  suppressMessages({
+    x <- orderly1::orderly_run("multi-dependency", root = src, echo = FALSE)
+    orderly1::orderly_commit(x, root = src)
+  })
 
   msg <- testthat::capture_messages(dst <- orderly2outpack(src, tempfile()))
   expect_true(file.exists(dst))
@@ -217,7 +219,7 @@ test_that("can migrate when archive has more than 1 dependency from 1 report", {
                c(".outpack", "orderly_config.yml"))
   expect_true(file.exists(file.path(dst, ".outpack")))
 
-  ids <- orderly2::orderly_search(NULL, location = "local", root = dst)
+  ids <- orderly::orderly_search(NULL, location = "local", root = dst)
   expect_setequal(ids, orderly1::orderly_list_archive(src)$id)
 })
 
@@ -233,10 +235,10 @@ test_that("cope nicely with migration failure", {
   unlink(file.path(src, "archive", "other", id2, "README.md"))
 
   expect_error(
-    orderly2outpack(src, tempfile()),
+    suppressMessages(orderly2outpack(src, tempfile())),
     "Metadata migration failure for 1/21 packets")
 
-  dst <- orderly2outpack(src, tempfile(), keep_going = TRUE)
+  dst <- suppressMessages(orderly2outpack(src, tempfile(), keep_going = TRUE))
   expect_equal(readLines(file.path(dst, ".outpack/import_skipped_ids")),
                c(id2, id1))
   d <- readRDS(file.path(dst, ".outpack/import_skipped.rds"))
@@ -323,7 +325,7 @@ resources:
   dst <- withr::local_tempdir()
   msg <- testthat::capture_messages(dst <- orderly2outpack(src, dst))
 
-  meta <- orderly2::orderly_metadata(id, root = dst)
+  meta <- orderly::orderly_metadata(id, root = dst)
   expect_equal(nrow(meta$files), 3)
 
   ## Locale will affect the case selected here, so be defensive:

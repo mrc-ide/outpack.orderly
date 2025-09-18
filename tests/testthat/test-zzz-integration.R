@@ -12,9 +12,9 @@ test_that("migrating source then archive is same as archive then source", {
       withr::with_dir(src2, x$before())
     }
     env <- new.env(parent = .GlobalEnv)
-    expect_no_error(suppressMessages(
-      dat[[i]]$id <- orderly2::orderly_run(x$name, x$parameters, envir = env,
-                                           root = src2, echo = FALSE)))
+    expect_no_error(suppressMessages(ignore_parameter_warning(
+      dat[[i]]$id <- orderly::orderly_run(x$name, x$parameters, envir = env,
+                                          root = src2, echo = FALSE))))
   }
 
   ## Need to copy over configuration to the archive migration, because
@@ -28,8 +28,8 @@ test_that("migrating source then archive is same as archive then source", {
   expect_length(id2, length(id1))
 
   for (i in seq_along(id1)) {
-    meta1 <- orderly2::orderly_metadata(id1[[i]], root = dst1)
-    meta2 <- orderly2::orderly_metadata(id2[[i]], root = src2)
+    meta1 <- orderly::orderly_metadata(id1[[i]], root = dst1)
+    meta2 <- orderly::orderly_metadata(id2[[i]], root = src2)
     expect_setequal(names(meta1), names(meta2))
     expect_equal(meta1$schema_version, meta2$schema_version)
     expect_equal(meta1$name, meta2$name)

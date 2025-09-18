@@ -46,18 +46,18 @@ orderly2outpack <- function(src, dest, link = FALSE, keep_going = FALSE,
       stop("Destination directory is not a bare outpack destination")
     }
   }
-  orderly2::orderly_init(dest,
-                         path_archive = NULL,
-                         use_file_store = TRUE,
-                         require_complete_tree = TRUE)
-  hash_algorithm <- orderly2::orderly_config(dest)$core$hash_algorithm
+  orderly::orderly_init(dest,
+                        path_archive = NULL,
+                        use_file_store = TRUE,
+                        require_complete_tree = TRUE)
+  hash_algorithm <- orderly::orderly_config(dest)$core$hash_algorithm
 
   cfg_orderly <- orderly1::orderly_config(src)
   src <- cfg_orderly$root
   message("Checking we can migrate this orderly archive")
   check_complete_tree(src)
 
-  known <- orderly2::orderly_search(NULL, location = "local", root = dest)
+  known <- orderly::orderly_search(NULL, location = "local", root = dest)
   contents <- orderly1::orderly_list_archive(src)
   contents <- contents[!(contents$id %in% known), ]
   contents <- contents[order(contents$id), ]
@@ -97,7 +97,7 @@ orderly2outpack <- function(src, dest, link = FALSE, keep_going = FALSE,
     ids_skip <- character()
   }
 
-  root <- orderly2:::root_open(dest, FALSE)
+  root <- orderly:::root_open(dest, FALSE)
 
   if (link) {
     message("Linking files, rather than copying them, into the file store")
@@ -122,7 +122,7 @@ orderly2outpack <- function(src, dest, link = FALSE, keep_going = FALSE,
     }
 
     p <- file.path(src, "archive", x$value$name, x$value$id)
-    orderly2:::outpack_insert_packet(p, x$value$json, root)
+    orderly:::outpack_insert_packet(p, x$value$json, root)
   }
 
   if (length(ids_skip) > 0) {
@@ -175,7 +175,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
   stopifnot(length(hash_expected) == length(files),
             length(files) > 0)
 
-  hash_found <- withr::with_dir(path, orderly2:::hash_files(files, "md5"))
+  hash_found <- withr::with_dir(path, orderly:::hash_files(files, "md5"))
   hash_err <- hash_expected != hash_found
   if (any(hash_err)) {
     message(paste0(sprintf("Some hashes do not agree for %s/%s:\n", name, id),
@@ -196,7 +196,7 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
 
   script <- data$meta$file_info_inputs$filename[
     data$meta$file_info_inputs$file_purpose == "script"]
-  session <- orderly2:::orderly_session_info(data$session_info)
+  session <- orderly:::orderly_session_info(data$session_info)
 
   f_artefacts <- function(x, outputs) {
     list(description = jsonlite::unbox(x$description),
@@ -247,16 +247,16 @@ orderly_metadata_to_outpack <- function(path, hash_algorithm) {
       long = scalar(data$meta$description),
       custom = custom),
     session = session)
-  orderly_json <- orderly2:::to_json(orderly, "orderly/orderly.json")
+  orderly_json <- orderly:::to_json(orderly, "orderly/orderly.json")
 
   custom <- list(list(application = "orderly", data = orderly_json))
   if (!is.null(orderly_db)) {
-    orderly_db_json <- orderly2:::to_json(orderly_db,
-                                          "orderly.db/orderly.db.json")
+    orderly_db_json <- orderly:::to_json(orderly_db,
+                                         "orderly.db/orderly.db.json")
     custom$orderly.db <- list(application = "orderly.db",
                               data = orderly_db_json)
   }
-  json <- orderly2:::outpack_metadata_create(
+  json <- orderly:::outpack_metadata_create(
     path = path, name = name, id = id, time = time, files = files,
     depends = depends, parameters = parameters, git = git, custom = custom,
     file_ignore = NULL, file_hash = NULL,
@@ -377,7 +377,7 @@ check_files_remap <- function(files, path) {
     v <- files_unique[files_unique_lower == x]
     ## I don't think that this is really needed?  However, it would be
     ## nice to check really.
-    h <- withr::with_dir(path, orderly2:::hash_files(v, "md5"))
+    h <- withr::with_dir(path, orderly:::hash_files(v, "md5"))
     if (length(unique(h)) > 1) {
       cli::cli_alert_warning(
         "Collapsing filenames {squote(v)}, but the content is different!")

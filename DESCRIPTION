@@ -1,6 +1,6 @@
 Package: outpack.orderly
 Title: Orderly to outpack metadata migration
-Version: 0.1.10
+Version: 0.1.11
 Authors@R: c(person("Rich", "FitzJohn", role = c("aut", "cre"),
                     email = "rich.fitzjohn@gmail.com"),
              person("Imperial College of Science, Technology and Medicine",
@@ -19,8 +19,8 @@ Imports:
     jsonlite,
     jsonvalidate,
     orderly1 (>= 1.7.0),
-    orderly2 (>= 1.99.67),
-    orderly.db (>= 0.1.2),
+    orderly (>= 1.99.85),
+    orderly.db (>= 0.1.4),
     withr,
     yaml
 Suggests:
@@ -31,7 +31,6 @@ Suggests:
     zip
 Config/testthat/edition: 3
 Remotes:
-    ropensci/jsonvalidate,
-    mrc-ide/orderly2,
+    mrc-ide/orderly,
     mrc-ide/orderly.db,
-    orderly1=vimc/orderly@vimc-7135
+    vimc/orderly1
